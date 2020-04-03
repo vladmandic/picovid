@@ -1,0 +1,7 @@
+node_modules
+cert
+pidash.log
+access.log
+package-lock.json
+config.json
+pidash.cache

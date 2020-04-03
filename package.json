@@ -1,0 +1,76 @@
+{
+    "name": "picovid",
+    "version": "0.0.1",
+    "private": true,
+    "description": "Pi Covid-19 Tracker",
+    "main": "",
+    "author": "mandic00@live.com",
+    "license": "ISC",
+    "scripts": {
+        "lint": "./node_modules/.bin/eslint *.html *.json"
+    },
+    "eslintIgnore": [
+        "node_modules/*"
+    ],
+    "eslintConfig": {
+        "env": {
+            "browser": true,
+            "commonjs": true,
+            "es6": true,
+            "node": false,
+            "jquery": true,
+            "es2020": true
+        },
+        "plugins": [
+            "html"
+        ],
+        "extends": [
+            "airbnb-base",
+            "plugin:json/recommended"
+        ],
+        "parserOptions": {
+            "ecmaVersion": 2020
+        },
+        "rules": {
+            "max-len": [
+                1,
+                210,
+                3
+            ],
+            "no-restricted-globals": 0,
+            "import/extensions": 0,
+            "no-await-in-loop": 0,
+            "no-restricted-syntax": "off",
+            "object-curly-newline": "off",
+            "camelcase": "off",
+            "no-loop-func": "off",
+            "no-mixed-operators": "off",
+            "prefer-destructuring": "off",
+            "no-bitwise": "off",
+            "no-underscore-dangle": "off",
+            "guard-for-in": "off",
+            "no-plusplus": "off"
+        },
+        "overrides": [
+            {
+                "files": [
+                    "*.html"
+                ],
+                "rules": {
+                    "no-unused-vars": "off",
+                    "no-undef": "off",
+                    "no-useless-concat": "off"
+                }
+            }
+        ]
+    },
+    "dependencies": {},
+    "devDependencies": {
+        "eslint": "^7.0.0-alpha.2",
+        "eslint-config-airbnb-base": "^14.1.0",
+        "eslint-plugin-html": "^6.0.0",
+        "eslint-plugin-import": "^2.20.1",
+        "eslint-plugin-json": "^2.1.1"
+    },
+    "optionalDependencies": {}
+}

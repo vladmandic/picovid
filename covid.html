@@ -1,4 +1,4 @@
-  <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
   <head>
     <title>pi covid-19 tracker</title>
@@ -21,6 +21,7 @@
       body { background: black; color: #ebebeb; margin-left: 8px; margin-right: 8px }
       .row { width: 100% }
       .col { background: #555555; text-align: left; margin: 8px; padding: 8px; width: 100%; box-shadow: 5px 5px #222222 }
+      .jqstooltip { background: #567d66 !important; border: 0px !important; padding: 8px; width: 100px !important; height: 30px !important }
       h1 { font-size: 1.3rem; margin-left: 8px; font-weight: bold; letter-spacing: 1px; line-height: 30px }
       h2 { font-size: 1.0rem; margin: 0px; padding: 0px; font-weight: bold; letter-spacing: 1px }
       a { color: white }
@@ -74,7 +75,7 @@
     </div>
 
     <script>
-      const img = 'images/world.jpg';
+      const img = 'world.jpg';
       async function get(item) {
         let http = null;
         let res = null;
@@ -244,7 +245,7 @@
         document.getElementById('div-title').innerHTML = `
           <h1>${color.blue('Updated')}: ${color.green(moment(data.usa.lastModified).format('dddd MMMM DD YYYY HH:mm'))} <br>
           ${color.blue('World Data')} | 
-          Total Cases: ${num(data.world.total)} | 
+          Positive: ${num(data.world.total)} | 
           Active: ${num(data.world.total - data.world.deaths - data.world.recovered)} | 
           Recovered: ${num(data.world.recovered)} | 
           Deaths: ${num(data.world.recovered)}
@@ -258,7 +259,6 @@
           Deaths: ${num(data.usa.death)} +${num(data.usaHistory[0].deathIncrease)}
           <br>
           ${color.blue('Miami-Dade Data')} | 
-          Cases: ${num(miami.CasesAll)} | 
           Tested: ${num(miami.PUILab_Yes)} | 
           Positive: ${num(miami.TPositive)} | 
           Pending: ${num(miami.TPending)} | 
@@ -286,7 +286,7 @@
             <td>${num(Math.abs(state.hospitalized ? state.hospitalized - yesterday.hospitalized : 0))}</td>
             <td>${num(state.death)}</td>
             <td>${num(Math.abs(state.death - yesterday.death))}</td>
-            <td>${color.greyed(state.lastUpdateEt)}</td>
+            <td>${moment(state.lastUpdateEt).add(19, 'years') > moment().subtract(2, 'days') ? color.greyed(state.lastUpdateEt) : color.red(state.lastUpdateEt)}</td>
             </tr>`;
         }
         table.innerHTML = text;
@@ -337,7 +337,8 @@
           const val = data.usaHistory[day - 1] ? data.usaHistory[day].positive - data.usaHistory[day - 1].positive : data.usaHistory[day].positive;
           trend.push(val);
         }
-        $(`.chart-country-total-${country.name}`).sparkline(trend, { type: 'bar', barColor: 'lightgray' });
+        $(`.chart-country-total-${country.name}`)
+          .sparkline(trend, { type: 'bar', barColor: 'lightgray', zeroColor: '', tooltipFormat: `<span>${country.name}: {{value}}</span>` });
         data.usaHistory.reverse();
       }
 
@@ -348,7 +349,8 @@
             const history = data.jhuhistory.find((a) => country.name === a.Country && a.State === '');
             let trend = history && history.Data ? history.Data : [];
             trend = trend.map((item) => (item > 10 ? item : null));
-            $(`.chart-country-total-${country.name.replace(/ /g, '').replace(/\./g, '')}`).sparkline(trend, { type: 'bar', barColor: 'lightgray' });
+            $(`.chart-country-total-${country.name.replace(/ /g, '').replace(/\./g, '')}`)
+              .sparkline(trend, { type: 'bar', barColor: 'lightgray', zeroColor: '', tooltipFormat: `<span>${country.name}: {{value}}</span>` });
           }
         }
       }
@@ -361,7 +363,8 @@
           for (const day of history.reverse()) {
             trend.push(day.positive);
           }
-          $(`.chart-state-new-${state.state}`).sparkline(trend, { type: 'bar', barColor: 'lightgray' });
+          $(`.chart-state-new-${state.state}`)
+            .sparkline(trend, { type: 'bar', barColor: 'lightgray', zeroColor: '', tooltipFormat: `<span>${state.state}: {{value}}</span>` });
         }
       }
 
