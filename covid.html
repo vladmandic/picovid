@@ -79,6 +79,7 @@
     </div>
 
     <script>
+      const maxItems = 56;
       async function get(item) {
         let http = null;
         let res = null;
@@ -249,7 +250,7 @@
           data.countries.push(country);
         }
         data.countries.sort((a, b) => (a.totalCases < b.totalCases ? 1 : -1));
-        data.countries.length = 56;
+        if (data.countries.length > maxItems) data.countries.length = maxItems;
       }
 
       async function printTitle() {
