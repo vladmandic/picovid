@@ -180,6 +180,12 @@
           date.setDate(date.getDate() - 1);
           file = `${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')}-${date.getFullYear().toString().padStart(2, '0')}`;
           res = await fetch(`${base}/${file}.csv`);
+        }
+        if (res && res.ok) body = await res.text();
+        else {
+          date.setDate(date.getDate() - 2);
+          file = `${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')}-${date.getFullYear().toString().padStart(2, '0')}`;
+          res = await fetch(`${base}/${file}.csv`);
           body = await res.text();
         }
         lines = body.split('\n');
@@ -380,9 +386,7 @@
         canvas.width = div.clientWidth - 16;
         canvas.height = Math.round(div.clientWidth / 4 * 3);
         canvas.style.opacity = 0.75;
-        const res = await fetch('images/world.jpg');
-        if (res && res.ok) div.style.backgroundImage = 'url("images/world.jpg")';
-        else div.style.backgroundImage = 'url("world.jpg")';
+        div.style.backgroundImage = 'url("world.jpg")';
       }
 
       async function renderMap() {
