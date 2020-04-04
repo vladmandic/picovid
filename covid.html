@@ -173,21 +173,23 @@
         const base = 'https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_daily_reports';
         const date = new Date();
         let file;
+        let body = null;
         file = `${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')}-${date.getFullYear().toString().padStart(2, '0')}`;
         res = await fetch(`${base}/${file}.csv`);
         if (res && res.ok) body = await res.text();
-        else {
+        if (!body) {
           date.setDate(date.getDate() - 1);
           file = `${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')}-${date.getFullYear().toString().padStart(2, '0')}`;
           res = await fetch(`${base}/${file}.csv`);
+          if (res && res.ok) body = await res.text();
         }
-        if (res && res.ok) body = await res.text();
-        else {
+        if (!body) {
           date.setDate(date.getDate() - 2);
           file = `${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')}-${date.getFullYear().toString().padStart(2, '0')}`;
           res = await fetch(`${base}/${file}.csv`);
-          body = await res.text();
+          if (res && res.ok) body = await res.text();
         }
+        if (!body) return;
         lines = body.split('\n');
         const header = lines[0].split(',');
         let temp = [];
@@ -420,9 +422,13 @@
 
       async function main() {
         initMap();
-        await getWMOData();
-        await getUSAData();
-        await getFLData();
+        const wait = {};
+        wait.wmo = getWMOData();
+        wait.usa = getUSAData();
+        wait.fl = getFLData();
+        await wait.wmo;
+        await wait.usa;
+        await wait.fl;
         printTitle();
         printCountriesTable();
         printStatesTable();
