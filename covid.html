@@ -69,13 +69,16 @@
           <li>Pending cases is reported by only few states</li>
           <li>Map infection scale is a square root function</li>
           <li>Red/green markers are just quick indicators of current state</li>
+          <li>Countries trend charts show last two months of new cases</li>
+          <li>Countries link to Worldometers.info per-country web page</li>
+          <li>States trend charts show last one months of new cases</li>
+          <li>States link to official state web page</li>        
         </ul>
       </div>
       <div class="col" id="div-news"></div>
     </div>
 
     <script>
-      const img = 'world.jpg';
       async function get(item) {
         let http = null;
         let res = null;
@@ -224,6 +227,7 @@
           const fields = $(item).find('td');
           const country = {
             name: fields[0].innerText,
+            link: $(fields[0].innerHTML).attr('href'),
             totalCases: int(fields[1].innerText),
             newCases: int(fields[2].innerText),
             totalDeaths: int(fields[3].innerText),
@@ -275,7 +279,7 @@
           const history = data.statesHistory.filter((a) => state.state === a.state);
           const yesterday = history[0].positive === state.positive ? history[1] : history[0];
           text += `<tr>
-            <td style="text-align: left"><b>${state.state}</b>: ${info.name}</td>
+            <td style="text-align: left"><b>${state.state}</b>: <a href="${info.covid19Site}">${info.name}</a></td>
             <td>${num(state.totalTestResults)}</td>
             <td>${num(state.totalTestResults - yesterday.totalTestResults)}</td>
             <td>${num(state.positive)}</td>
@@ -311,7 +315,7 @@
         for (const country of countries) {
           const densityCases = country.densityCases > 2 ? country.densityCases : null;
           text += `<tr>
-            <td style="text-align: left"><b>${country.name}</b></td>
+            <td style="text-align: left"><b><a href="https://www.worldometers.info/coronavirus/${country.link}">${country.name}</a></b></td>
             <td>${num(country.totalCases)}</td>
             <td>${color.ok(num(country.newCases), 100 * country.newCases / country.totalCases < 8)}</td>
             <td><span class="chart-country-total-${country.name.replace(/ /g, '').replace(/\./g, '')}"></span></td>
@@ -349,6 +353,7 @@
             const history = data.jhuhistory.find((a) => country.name === a.Country && a.State === '');
             let trend = history && history.Data ? history.Data : [];
             trend = trend.map((item) => (item > 10 ? item : null));
+            if (trend.length > 60) trend.splice(0, trend.length - 60);
             $(`.chart-country-total-${country.name.replace(/ /g, '').replace(/\./g, '')}`)
               .sparkline(trend, { type: 'bar', barColor: 'lightgray', zeroColor: '', tooltipFormat: `<span>${country.name}: {{value}}</span>` });
           }
@@ -363,6 +368,7 @@
           for (const day of history.reverse()) {
             trend.push(day.positive);
           }
+          if (trend.length > 30) trend.splice(0, trend.length - 30);
           $(`.chart-state-new-${state.state}`)
             .sparkline(trend, { type: 'bar', barColor: 'lightgray', zeroColor: '', tooltipFormat: `<span>${state.state}: {{value}}</span>` });
         }
@@ -374,7 +380,9 @@
         canvas.width = div.clientWidth - 16;
         canvas.height = Math.round(div.clientWidth / 4 * 3);
         canvas.style.opacity = 0.75;
-        div.style.backgroundImage = `url(${img})`;
+        const res = await fetch('images/world.jpg');
+        if (res && res.ok) div.style.backgroundImage = 'url("images/world.jpg")';
+        else div.style.backgroundImage = 'url("world.jpg")';
       }
 
       async function renderMap() {

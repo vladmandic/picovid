@@ -18,3 +18,7 @@ Deployment: Just download covid.html and world.jpg to any local folder and open 
 - Pending cases is reported by only few states
 - Map infection scale is a square root function
 - Red/green markers are just quick indicators of the current state
+- Countries trend charts show last two months of new cases
+- Countries link to Worldometers.info per-country web page
+- States trend charts show last one months of new cases
+- States link to official state web page
