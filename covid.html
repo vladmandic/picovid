@@ -401,7 +401,7 @@
             <td style="text-align: left"><b><a href="https://www.worldometers.info/coronavirus/${country.link}">${country.name}</a></b></td>
             <td>${num(country.totalCases)}</td>
             <td>${color.ok(num(country.newCases), 100 * country.newCases / country.totalCases < 8)}</td>
-            <td>${num(country.liveCases)}</td>
+            <td>${color.ok(num(country.liveCases), country.liveCases < country.newCases)}</td>
             <td><span class="chart-country-total-${country.name.replace(/ /g, '').replace(/\./g, '')}"></span></td>
             <td>${num(country.totalTested)}</td>
             <td>${num(country.totalDeaths)}</td>
@@ -429,7 +429,7 @@
           trend.push(val);
         }
         $(`.chart-country-total-${country.name}`)
-          .sparkline(trend, { type: 'bar', barColor: 'lightgray', zeroColor: '', tooltipFormat: `<span>${country.name}: {{value}}</span>` });
+          .sparkline(trend, { type: 'bar', barColor: 'lightyellow', zeroColor: '', tooltipFormat: `<span>${country.name}: {{value}}</span>` });
         data.usaHistory.reverse();
       }
 
@@ -439,10 +439,10 @@
           if (country.name !== 'USA') {
             const history = data.jhuhistory.find((a) => country.name === a.Country && a.State === '');
             let trend = history && history.Data ? history.Data : [];
-            trend = trend.map((item) => (item > 10 ? item : null));
+            trend = trend.map((item) => (item > 1 ? item : null));
             if (trend.length > 60) trend.splice(0, trend.length - 60);
             $(`.chart-country-total-${country.name.replace(/ /g, '').replace(/\./g, '')}`)
-              .sparkline(trend, { type: 'bar', barColor: 'lightgray', zeroColor: '', tooltipFormat: `<span>${country.name}: {{value}}</span>` });
+              .sparkline(trend, { type: 'bar', barColor: 'lightyellow', zeroColor: '', tooltipFormat: `<span>${country.name}: {{value}}</span>` });
           }
         }
       }
@@ -457,7 +457,7 @@
           }
           if (trend.length > 30) trend.splice(0, trend.length - 30);
           $(`.chart-state-new-${state.state}`)
-            .sparkline(trend, { type: 'bar', barColor: 'lightgray', zeroColor: '', tooltipFormat: `<span>${state.state}: {{value}}</span>` });
+            .sparkline(trend, { type: 'bar', barColor: 'lightyellow', zeroColor: '', tooltipFormat: `<span>${state.state}: {{value}}</span>` });
         }
       }
 
