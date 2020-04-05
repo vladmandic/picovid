@@ -12,12 +12,13 @@ Deployment: Just download covid.html and world.jpg to any local folder and open 
 - Florida Department of Health: https://floridahealthcovid19.gov/
 
 ## Notes on data:
-- New cases can appear low in early morning as they are reported throughout the day
-- Hospitalized cases is not reported regularly by all states
-- Pending cases is reported by only few states
-- Map infection scale is a square root function
-- Red/green markers are just quick indicators of the current state
+- Countries daily new cases and deaths is reported for last full 24h period and for current day so far
+- Counties red/green markers per 1M indicate country compared to world average
+- Counties red/green markers for new data indicate growth rate below threshold or recovery higher than growth
 - Countries trend charts show last two months of new cases
 - Countries link to Worldometers.info per-country web page
+- States hospitalized cases is not reported regularly by all states
+- States pending cases is reported by only few states
 - States trend charts show last one months of new cases
-- States link to official state web page
+- States link to official state web page        
+- Map infection scale is a square root function
