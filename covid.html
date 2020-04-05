@@ -336,6 +336,7 @@
               <br>`;
           }
         } else {
+          if (loc.country === 'United Kingdom') loc.country = 'UK';
           const country = data.countries.find((a) => a.name === loc.country);
           if (country) {
             text += `
