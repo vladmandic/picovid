@@ -9,13 +9,21 @@
     <meta name="viewport" content="width=device-width, initial-scale=0.4, minimum-scale=0.1, maximum-scale=2.0, shrink-to-fit=yes, user-scalable=yes">
     <meta name="theme-color" content="#555555"/>
     <link rel="shortcut icon" href="favicon.ico" type="image/x-icon">
+    <!--
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css">
     <link rel='stylesheet' href='https://fonts.googleapis.com/css?family=Roboto'>
     <script defer type="text/javascript" src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
     <script defer type="text/javascript" src="https://omnipotent.net/jquery.sparkline/2.1.2/jquery.sparkline.min.js"></script>
     <script defer type="text/javascript" src="https://momentjs.com/downloads/moment.min.js"></script>
     <script defer type="text/javascript" src="https://unpkg.com/sorttable@1.0.2/sorttable.js"></script>
+    -->
+    <link rel="stylesheet" href="https://vladmandic.github.io/picovid/assets/bootstrap.css">
+    <script defer type="text/javascript" src="https://vladmandic.github.io/picovid/assets/jquery.js"></script>
+    <script defer type="text/javascript" src="https://vladmandic.github.io/picovid/assets/sparkline.js"></script>
+    <script defer type="text/javascript" src="https://vladmandic.github.io/picovid/assets/moment.js"></script>
+    <script defer type="text/javascript" src="https://vladmandic.github.io/picovid/assets/sorttable.js"></script>
     <style>
+      @font-face { font-family: 'Roboto'; font-style: normal; font-weight: 400; src: local('Roboto'), local('Roboto-Regular'), url('https://vladmandic.github.io/picovid/assets/roboto.ttf') format('truetype'); }
       ::-webkit-scrollbar { display: none; width: 0; background: transparent }
       html { font-family: Roboto; font-size: 14px }
       body { background: black; color: #ebebeb; margin-left: 8px; margin-right: 8px }
@@ -44,7 +52,11 @@
     </div>
     <div class="row">
       <span id="div-author" style="width: 100%" class="text-right">
-        <h2>Author: <a href="mailto:mandic00@live.com">V. Mandic</a>&nbsp Source: <a href="https://github.com/vladmandic/picovid">GitHub</a></h2>
+        <h2>
+          Author: <a href="mailto:mandic00@live.com">V. Mandic</a> | 
+          Sources: <a href="https://github.com/vladmandic/picovid">GitHub</a> | 
+          &nbsp Sources: <a href="https://vladmandic.github.io/picovid/covid.html">Live Link</a>
+        </h2>
       </span>
       <span id="div-miami" style="width: 100%" class="text-right"></span>
       <span id="div-status" style="width: 100%" class="text-right"></span>
@@ -467,7 +479,7 @@
         canvas.width = div.clientWidth - 16;
         canvas.height = Math.round(div.clientWidth / 4 * 3);
         canvas.style.opacity = 0.75;
-        div.style.backgroundImage = 'url("world.jpg")';
+        div.style.backgroundImage = 'url("https://vladmandic.github.io/picovid/assets/world.jpg")';
       }
 
       async function renderMap() {
