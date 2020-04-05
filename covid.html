@@ -388,7 +388,7 @@
       async function printStatesTable() {
         const table = document.getElementById('table-states');
         let text = `
-            <tr><th>State</th><th>Tested</th><th>(new)</th><th>Positive</th><th>(new)</th><th>History: 1 Month</th>
+            <tr><th>State</th><th>Tested</th><th>(new)</th><th>Positive</th><th>(new)</th><th>History: new cases over 1 Month</th>
             <th>Pending</th><th>Hospitalized</th><th>(new)</th><th>Deaths</th><th>(new)</th><th>Updated</th></tr>
           `;
         for (const state of data.states) {
@@ -417,7 +417,7 @@
       async function printCountriesTable() {
         const table = document.getElementById('table-countries');
         let text = `<tr>
-          <th>Country</th><th>Cases</th><th>(new/day)</th><th>(new/current)</th><th>History: 2 Months</th><th>Tested</th>
+          <th>Country</th><th>Cases</th><th>(new/day)</th><th>(new/current)</th><th>History: new cases over 2 months</th><th>Tested</th>
           <th>Deaths</th><th>(new/24h)</th><th>(new/current)</th><th>Recovered</th><th>Active</th><th>Critical</th><th>Tested/1M</th><th>Cases/1M</th><th>Deaths/1M</th>
           </tr>`;
         const countries = data.countries.length ? data.countries : [];
@@ -479,7 +479,7 @@
           const trend = [];
           const history = data.statesHistory.filter((a) => state.state === a.state);
           for (const day of history.reverse()) {
-            trend.push(day.positive);
+            trend.push(day.positiveIncrease);
           }
           if (trend.length > 30) trend.splice(0, trend.length - 30);
           $(`.chart-state-new-${state.state}`)
