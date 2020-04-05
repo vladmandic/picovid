@@ -24,11 +24,14 @@
     <script defer type="text/javascript" src="https://vladmandic.github.io/picovid/assets/sorttable.js"></script>
     <style>
       @font-face { font-family: 'Roboto'; font-style: normal; font-weight: 400; src: local('Roboto'), local('Roboto-Regular'), url('https://vladmandic.github.io/picovid/assets/roboto.ttf') format('truetype'); }
-      ::-webkit-scrollbar { display: none; width: 0; background: transparent }
+      ::-webkit-scrollbar { width: 20px; }
+      ::-webkit-scrollbar-track { border-radius: 0; }
+      ::-webkit-scrollbar-thumb { border-radius: 0; background: grey }
+      ::-webkit-scrollbar-button { background: transparent; }
       html { font-family: Roboto; font-size: 14px }
-      body { background: black; color: #ebebeb; margin-left: 8px; margin-right: 8px }
+      body { background: black; color: #ebebeb; margin-left: 8px; margin-right: 8px; overflow-x: hidden; }
       .row { width: 100% }
-      .col { background: #555555; text-align: left; margin: 8px; padding: 8px; width: 100%; box-shadow: 5px 5px #222222 }
+      .col { background: #555555; text-align: left; margin: 8px; padding: 8px; width: 100%; box-shadow: 5px 5px #222222; overflow-y: auto; }
       .jqstooltip { background: #567d66 !important; border: 0px !important; padding: 8px; width: 100px !important; height: 30px !important }
       h1 { font-size: 1.3rem; margin-left: 8px; font-weight: bold; letter-spacing: 1px; line-height: 30px }
       h2 { font-size: 1.0rem; margin: 0px; padding: 0px; font-weight: bold; letter-spacing: 1px }
@@ -63,11 +66,11 @@
       <span style="margin-left: 20px; margin-right: 20px"><b>Filter data:</b></span><input type="text" id="filter" placeholder="Type to filter..." />
     </div>
     <div class="row">
-      <div class="col"><table id="table-countries"></table></div>
-      <div class="col"><table id="table-states"></table></div>
+      <div class="col" style="max-height: 1000px; min-width: 1500px"><table id="table-countries"></table></div>
+      <div class="col" style="max-height: 1000px; min-width: 1500px"><table id="table-states"></table></div>
     </div>
     <div class="row">
-      <div class="col" id="div-map" style="min-width: 2271px; min-height: 819px; max-width: 2271px; max-height: 819px;">
+      <div class="col" id="div-map" style="min-width: 2271px; min-height: 819px; max-width: 2271px; max-height: 819px; overflow: hidden">
         <canvas id="canvas-map"></canvas>
       </div>
     </div>
@@ -376,7 +379,10 @@
 
       async function printStatesTable() {
         const table = document.getElementById('table-states');
-        let text = '<tr><th>State</th><th>Tested</th><th>(new)</th><th>Positive</th><th>(new)</th><th></th><th>Pending</th><th>Hospitalized</th><th>(new)</th><th>Deaths</th><th>(new)</th><th>Updated</th></tr>';
+        let text = `
+            <tr><th>State</th><th>Tested</th><th>(new)</th><th>Positive</th><th>(new)</th><th>History: 1 Month</th>
+            <th>Pending</th><th>Hospitalized</th><th>(new)</th><th>Deaths</th><th>(new)</th><th>Updated</th></tr>
+          `;
         for (const state of data.states) {
           const info = data.statesInfo.find((a) => state.state === a.state);
           const history = data.statesHistory.filter((a) => state.state === a.state);
@@ -403,7 +409,7 @@
       async function printCountriesTable() {
         const table = document.getElementById('table-countries');
         let text = `<tr>
-          <th>Country</th><th>Cases</th><th>(new/day)</th><th>(new/current)</th><th></th><th>Tested</th>
+          <th>Country</th><th>Cases</th><th>(new/day)</th><th>(new/current)</th><th>History: 2 Months</th><th>Tested</th>
           <th>Deaths</th><th>(new/24h)</th><th>(new/current)</th><th>Recovered</th><th>Active</th><th>Critical</th><th>Tested/1M</th><th>Cases/1M</th><th>Deaths/1M</th>
           </tr>`;
         const countries = data.countries.length ? data.countries : [];
@@ -417,11 +423,11 @@
             <td><span class="chart-country-total-${country.name.replace(/ /g, '').replace(/\./g, '')}"></span></td>
             <td>${num(country.totalTested)}</td>
             <td>${num(country.totalDeaths)}</td>
-            <td>${num(country.newDeaths)}</td>
-            <td>${num(country.liveDeaths)}</td>
+            <td>${color.ok(num(country.newDeaths), 100 * country.newDeaths / country.totalDeaths < 8)}</td>
+            <td>${color.ok(num(country.liveDeaths), country.liveDeaths < country.newDeaths)}</td>
             <td>${color.ok(num(country.totalRecovered), 100 * country.totalRecovered / country.totalCases > 35)}</td>
             <td>${color.ok(num(country.activeCases), 100 * country.activeCases / country.totalCases < 50)}</td>
-            <td>${num(country.criticalCases)}</td>
+            <td>${color.ok(num(country.criticalCases), country.criticalCases < country.totalRecovered)}</td>
             <td>${color.ok(num(country.densityTested), country.densityTested > data.world.densityTested)}</td>
             <td>${color.ok(num(country.densityCases), country.densityCases < data.world.densityCases)}</td>
             <td>${color.ok(country.densityDeaths.toFixed(2), country.densityDeaths < data.world.densityDeaths)}</td>
