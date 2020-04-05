@@ -3,7 +3,8 @@
 Because I couldn't find one that shows me at a glance what's the current trend in the World and in the United States.
 Why Pi*anything? Because I use my Raspberry Pi 4 as a development server.
 
-Deployment: Just download covid.html and world.jpg to any local folder and open html file. There is no deployment.
+Deployment: Just download covid.html to any local folder and open html file. There is no deployment.
+Or run directly from Git pages.
 
 ## Credit for data goes to:
 - The COVID Tracking Project: https://covidtracking.com/
