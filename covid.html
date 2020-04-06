@@ -239,6 +239,7 @@
       async function getFLData() {
         const temp = await get('https://services1.arcgis.com/CY1LXxl9zlJeBuRZ/arcgis/rest/services/Florida_COVID19_Cases/FeatureServer/0/query?f=json&where=1=1&returnGeometry=false&outFields=*');
         data.florida = [];
+        if (!temp || !temp.features) return;
         for (const county of temp.features) {
           data.florida.push(county.attributes);
         }
@@ -368,6 +369,7 @@
         text += '</h1';
         document.getElementById('div-location').innerHTML = text;
         const miami = data.florida.find((a) => a.COUNTYNAME === 'MIAMI-DADE');
+        if (!miami) return;
         document.getElementById('div-miami').innerHTML = `
           <b>${color.blue('Miami-Dade Data')}</b> | 
           Tested: ${num(miami.PUILab_Yes)} | 
@@ -550,15 +552,15 @@
 
       async function main() {
         initMap();
-        await getWMOData();
+        printNotes();
         await getUSAData();
+        printStatesTable();
+        await getWMOData();
+        printCountriesTable();
         await getFLData();
         printTitle();
-        printCountriesTable();
-        printStatesTable();
-        renderStatesTrend();
         renderUSATrend();
-        printNotes();
+        renderStatesTrend();
         getJHUSeries().then(() => renderCountriesTrend());
         getJHULatest().then(() => renderMap());
         printNews();
