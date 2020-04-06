@@ -12,7 +12,7 @@
     <link rel="shortcut icon" href="favicon.ico" type="image/x-icon">
     <link rel="apple-touch-icon" href="https://vladmandic.github.io/picovid/assets/dash-256.png">
     <link rel="stylesheet" href="https://vladmandic.github.io/picovid/assets/bootstrap.css">
-    <script defer type="text/javascript" src="https://vladmandic.github.io/picovid/assets/jquery.js"></script>
+    <script type="text/javascript" src="https://vladmandic.github.io/picovid/assets/jquery.js"></script>
     <script defer type="text/javascript" src="https://vladmandic.github.io/picovid/assets/sparkline.js"></script>
     <script defer type="text/javascript" src="https://vladmandic.github.io/picovid/assets/moment.js"></script>
     <script defer type="text/javascript" src="https://vladmandic.github.io/picovid/assets/sorttable.js"></script>
@@ -93,7 +93,7 @@
 
     <script>
       const maxItems = 75;
-      const data = { world: {}, countries: [], usa: {}, usaHistory: [], states: [], statesInfo: [], statesHistory: [], florida: [], news: [], jhulatest: [], jhuhistory: [] };
+      const data = { status: {}, loc: {}, world: {}, countries: [], usa: {}, usaHistory: [], states: [], statesInfo: [], statesHistory: [], florida: [], news: [], jhulatest: [], jhuhistory: [] };
       
       async function get(item) {
         let http = null;
@@ -227,7 +227,7 @@
       }
 
       async function getUSAData() {
-        const temp = await get('https://covidtracking.com/api/us');
+        const temp = await get('https://covidtracking.com/api/v1/us/current.json');
         data.usa = temp[0];
         data.usaHistory = await get('https://covidtracking.com/api/us/daily');
         data.states = await get('https://covidtracking.com/api/states');
@@ -237,7 +237,9 @@
       }
 
       async function getFLData() {
-        const temp = await get('https://services1.arcgis.com/CY1LXxl9zlJeBuRZ/arcgis/rest/services/Florida_COVID19_Cases/FeatureServer/0/query?f=json&where=1=1&returnGeometry=false&outFields=*');
+        // use query builder at https://services1.arcgis.com/CY1LXxl9zlJeBuRZ/arcgis/rest/services/Florida_COVID19_Cases/FeatureServer/0
+        // eslint-disable-next-line max-len
+        const temp = await get('https://services1.arcgis.com/CY1LXxl9zlJeBuRZ/arcgis/rest/services/Florida_COVID19_Cases/FeatureServer/0//query?where=1%3D1&objectIds=&time=&geometry=&geometryType=esriGeometryEnvelope&inSR=&spatialRel=esriSpatialRelIntersects&resultType=standard&distance=0.0&units=esriSRUnit_Meter&returnGeodetic=false&outFields=*&returnGeometry=false&returnCentroid=false&featureEncoding=esriDefault&multipatchOption=xyFootprint&maxAllowableOffset=&geometryPrecision=&outSR=&datumTransformation=&applyVCSProjection=false&returnIdsOnly=false&returnUniqueIdsOnly=false&returnCountOnly=false&returnExtentOnly=false&returnQueryGeometry=false&returnDistinctValues=false&cacheHint=false&orderByFields=&groupByFieldsForStatistics=&outStatistics=&having=&resultOffset=&resultRecordCount=&returnZ=true&returnM=true&returnExceededLimitFeatures=true&quantizationParameters=&sqlFormat=standard&f=pjson&token=');
         data.florida = [];
         if (!temp || !temp.features) return;
         for (const county of temp.features) {
@@ -313,6 +315,11 @@
       }
 
       async function printTitle() {
+        if (!data.status.world || !data.status.usa || !data.status.statesInfo || !data.status.countries || !data.status.loc) {
+          setTimeout(printTitle, 100);
+          return;
+        }
+        // print world info
         document.getElementById('div-title').innerHTML = `
           <h1>${color.blue('Covid-19 World Data')} &nbsp &nbsp | 
           Tested: ${num(data.world.totalTested)} | 
@@ -322,13 +329,13 @@
           Recovered: ${num(data.world.totalRecovered)} | 
           Deaths: ${num(data.world.totalDeaths)} +${num(data.world.newDeaths)} | 
           </h1>`;
-        data.loc = await get('https://extreme-ip-lookup.com/json/');
-        if (!data.loc || !data.loc.country) return;
+        // get geoip
         let text = `<h1>
-          Location data for ${color.yellow(data.loc.isp)} user from ${color.yellow(data.loc.city)} 
-          ${color.yellow(data.loc.region)} ${color.yellow(data.loc.country)} ${color.yellow(data.loc.continent)}
+          Location data for ${color.yellow(data.loc.isp || 'unknown')} user from ${color.yellow(data.loc.city || '')} 
+          ${color.yellow(data.loc.region || '')} ${color.yellow(data.loc.country || '')} ${color.yellow(data.loc.continent || '')}
           <br>`;
         if (data.loc.country === 'United States') {
+          // print geoip usa info
           text += `${color.blue('United States')} &nbsp &nbsp | 
             Tested: ${num(data.usa.totalTestResults)} +${num(data.usaHistory[0].totalTestResultsIncrease)} | 
             Positive: ${num(data.usa.positive)} +${num(data.usaHistory[0].positiveIncrease)} | 
@@ -337,6 +344,7 @@
             Deaths: ${num(data.usa.death)} +${num(data.usaHistory[0].deathIncrease)} | 
             Updated: ${moment(data.usa.lastModified).format('ddd HH:mm')}
             <br>`;
+          // print geoip state
           const info = data.statesInfo.find((a) => data.loc.region === a.name);
           let state;
           if (info) state = data.states.find((a) => info.state === a.state);
@@ -353,6 +361,7 @@
               <br>`;
           }
         } else {
+          // print geoip country info
           if (data.loc.country === 'United Kingdom') data.loc.country = 'UK';
           const country = data.countries.find((a) => a.name === data.loc.country);
           if (country) {
@@ -368,6 +377,13 @@
         }
         text += '</h1';
         document.getElementById('div-location').innerHTML = text;
+      }
+
+      async function printMiami() {
+        if (!data.status.florida) {
+          setTimeout(printMiami, 100);
+          return;
+        }
         const miami = data.florida.find((a) => a.COUNTYNAME === 'MIAMI-DADE');
         if (!miami) return;
         document.getElementById('div-miami').innerHTML = `
@@ -381,6 +397,10 @@
       }
 
       async function printStatesTable() {
+        if (!data.status.states || !data.status.statesHistory || !data.status.statesInfo) {
+          setTimeout(printStatesTable, 100);
+          return;
+        }
         const table = document.getElementById('table-states');
         let text = `
             <tr><th>State</th><th>Tested</th><th>(new)</th><th>Positive</th><th>(new)</th><th>History: new cases over 1 Month</th>
@@ -410,6 +430,10 @@
       }
 
       async function printCountriesTable() {
+        if (!data.status.countries) {
+          setTimeout(printCountriesTable, 100);
+          return;
+        }
         const table = document.getElementById('table-countries');
         let text = `<tr>
           <th>Country</th><th>Cases</th><th>(new/day)</th><th>(new/current)</th><th>History: new cases over 2 months</th><th>Tested</th>
@@ -441,7 +465,10 @@
       }
 
       async function renderUSATrend() {
-        if (!data.countries.length || !data.usaHistory) return;
+        if (!data.status.countries || !data.status.usaHistory) {
+          setTimeout(renderUSATrend, 100);
+          return;
+        }
         const country = data.countries.find((a) => a.name === 'USA');
         data.usaHistory.reverse();
         const trend = [];
@@ -455,7 +482,10 @@
       }
 
       async function renderCountriesTrend() {
-        if (!data.countries.length || !data.jhuhistory) return;
+        if (!data.status.countries || !data.status.jhuHistory) {
+          setTimeout(renderCountriesTrend, 100);
+          return;
+        }
         for (const country of data.countries) {
           if (country.name !== 'USA') {
             const history = data.jhuhistory.find((a) => country.name === a.Country && a.State === '');
@@ -469,7 +499,10 @@
       }
 
       async function renderStatesTrend() {
-        if (!data.statesHistory) return;
+        if (!data.status.states || !data.status.statesHistory) {
+          setTimeout(renderStatesTrend, 100);
+          return;
+        }
         for (const state of data.states) {
           const trend = [];
           const history = data.statesHistory.filter((a) => state.state === a.state);
@@ -492,6 +525,10 @@
       }
 
       async function renderMap() {
+        if (!data.status.jhuLatest) {
+          setTimeout(renderMap, 100);
+          return;
+        }
         const canvas = document.getElementById('canvas-map');
         const ctx = canvas.getContext('2d');
         ctx.fillStyle = 'lightcoral';
@@ -504,12 +541,16 @@
           ctx.arc(posx, posy, size, 0, 2 * Math.PI, false);
           ctx.fill();
         }
-        const near = data.jhulatest.filter((a) => (Math.round(a.Lat) === Math.round(data.loc.lat) && Math.round(a.Long_) === Math.round(data.loc.lon)));
+        // const near = data.jhulatest.filter((a) => (Math.round(a.Lat) === Math.round(data.loc.lat) && Math.round(a.Long_) === Math.round(data.loc.lon)));
         // console.log('Location', data.loc);
         // console.log('Nearest match', near);
       }
 
       async function printNews() {
+        if (!data.status.news) {
+          setTimeout(printNews, 100);
+          return;
+        }
         const div = document.getElementById('div-news');
         let text = '<h1>In The News</h1>';
         if (data.news.length > 30) data.news.length = 30;
@@ -520,20 +561,37 @@
       }
 
       async function status() {
+        data.status = {
+          loc: data.loc && data.loc.country !== null,
+          world: data.world && data.world.totalCases > 0,
+          countries: data.countries && data.countries.length > 0,
+          usa: data.usa && data.usa.totalTestResults > 0,
+          usaHistory: data.usaHistory && data.usaHistory.length > 0,
+          states: data.states && data.states.length > 0,
+          statesHistory: data.statesHistory && data.statesHistory.length > 0,
+          statesInfo: data.statesInfo && data.statesInfo.length > 0,
+          jhuLatest: data.jhulatest && data.jhulatest.length > 0,
+          jhuHistory: data.jhuhistory && data.jhuhistory.length > 0,
+          florida: data.florida && data.florida.length > 0,
+          news: data.news && data.news.length > 0,
+        };
+        // console.log(data.status);
         document.getElementById('div-status').innerHTML = `<b>Data Sources Status:</b> 
-          ${color.ok('World Latest', data.world && data.world.totalCases > 0)} | 
-          ${color.ok('Countries', data.countries && data.countries.length > 0)} | 
-          ${color.ok('USA Current', data.usa && data.usa.totalTestResults > 0)} | 
-          ${color.ok('USA History', data.usaHistory && data.usaHistory.length > 0)} | 
-          ${color.ok('USA States', data.statesHistory && data.statesHistory.length > 0)} | 
-          ${color.ok('JHU Latest', data.jhulatest && data.jhulatest.length > 0)} | 
-          ${color.ok('JHU Series', data.jhuhistory && data.jhuhistory.length > 0)} | 
-          ${color.ok('Florida', data.florida && data.florida.length > 0)} | 
-          ${color.ok('News', data.news && data.news.length > 0)}
+          ${color.ok('World Latest', data.status.world)} | 
+          ${color.ok('Countries', data.status.countries)} | 
+          ${color.ok('USA Current', data.status.usa)} | 
+          ${color.ok('USA History', data.status.usaHistory)} | 
+          ${color.ok('USA States', data.status.statesHistory)} | 
+          ${color.ok('JHU Latest', data.status.jhuLatest)} | 
+          ${color.ok('JHU Series', data.status.jhuHistory)} | 
+          ${color.ok('Florida', data.status.florida)} | 
+          ${color.ok('News', data.status.news)}
           `;
+        setTimeout(status, 100);
       }
 
       async function filter() {
+        // filter method invoked by input field keypress that shows/hides matching table records
         const q = new RegExp(this.value, 'i');
         $('#table-countries > tbody').find('tr').each(function match() {
           if ($(this).children('td:first').text().match(q)) $(this).show();
@@ -550,27 +608,41 @@
         document.getElementById('div-notes').innerHTML = marked(md);
       }
 
+      async function getGeoIP() {
+        data.loc = await get('https://extreme-ip-lookup.com/json/');
+        if (!data.loc || !data.loc.country) data.loc = { county: 'unknown', region: 'unknown' };
+      }
+
       async function main() {
-        initMap();
-        printNotes();
-        await getUSAData();
-        printStatesTable();
-        await getWMOData();
-        printCountriesTable();
-        await getFLData();
+        // get all datasets
+        getGeoIP();
+        getUSAData();
+        getWMOData();
+        getFLData();
+        getJHUSeries();
+        getJHULatest();
+        // init status loop
+        await status();
+        // render all data
         printTitle();
+        printMiami();
+        printNotes();
+        printStatesTable();
+        printCountriesTable();
         renderUSATrend();
         renderStatesTrend();
-        getJHUSeries().then(() => renderCountriesTrend());
-        getJHULatest().then(() => renderMap());
+        renderCountriesTrend();
+        initMap();
+        renderMap();
         printNews();
+        // register handlers
         $('#filter').on('keyup', filter);
         $('#raw-json').click(getJSON);
+        // reload every 30min
         setTimeout(main, 30 * 60 * 1000);
       }
 
       main();
-      setInterval(status, 1000);
     </script>
 
   </body>
