@@ -7,7 +7,8 @@
     "author": "mandic00@live.com",
     "license": "ISC",
     "scripts": {
-        "lint": "./node_modules/.bin/eslint *.html *.json"
+        "lint": "./node_modules/.bin/eslint *.html *.js *.json",
+        "doc": "./node_modules/.bin/jsdoc -d ./jsdoc -R ./README.md -P ./package.json --pedantic --verbose covid.js"
     },
     "eslintIgnore": [
         "node_modules/*"
@@ -64,7 +65,9 @@
             }
         ]
     },
-    "dependencies": {},
+    "dependencies": {
+        "jsdoc": "^3.6.3"
+    },
     "devDependencies": {
         "eslint": "^7.0.0-alpha.2",
         "eslint-config-airbnb-base": "^14.1.0",

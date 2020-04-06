@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: covid.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: covid.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/* global moment, sorttable, marked */
+const maxItems = 75;
+/** Main shared data structure */
+const data = { status: {}, fetch: [], loc: {}, world: {}, countries: [], usa: {}, usaHistory: [], states: [], statesInfo: [], statesHistory: [], florida: [], news: [], jhulatest: [], jhuhistory: [] };
+
+/** Wrapper for HTTP GET */
+async function get(item, header = {}) {
+  let http = null;
+  let res = null;
+  const t0 = window.performance.now();
+  res = await fetch(item, header);
+  http = res &amp;&amp; res.ok ? await res.text() : '';
+  try { http = JSON.parse(http); } catch { /**/ }
+  const t1 = window.performance.now();
+  const obj = { time: new Date(), uri: item, status: res.status, msg: res.statusText, ms: Math.round((1000 * t1 - 1000 * t0) / 1000) };
+  // eslint-disable-next-line no-console
+  console.log(obj);
+  data.fetch.push(obj);
+  return http;
+}
+
+/** Wrapper for HTTP GET with proxy through private server to bypass CORS rules */
+async function proxy(item) {
+  const http = await get(`https://pidash.ddns.net/api/proxy?url=${encodeURIComponent(item)}`, { headers: { authorization: 'Basic cGlkYXNoOmdUU2R5U2RlJWN0NDIjU2FB' } });
+  return http;
+}
+
+/** Helper to color HTML strings */
+const color = {
+  white: (str) => `&lt;font color="white">${str}&lt;/font>`,
+  black: (str) => `&lt;font color="black">${str}&lt;/font>`,
+  red: (str) => `&lt;font color="lightcoral">${str}&lt;/font>`,
+  green: (str) => `&lt;font color="lightgreen">${str}&lt;/font>`,
+  blue: (str) => `&lt;font color="lightblue">${str}&lt;/font>`,
+  yellow: (str) => `&lt;font color="lightyellow">${str}&lt;/font>`,
+  grey: (str) => `&lt;font color="lightgray">${str}&lt;/font>`,
+  greyed: (str) => `&lt;font color="gray">${str}&lt;/font>`,
+  ok: (str, bool) => (bool ? `&lt;font color="lightgreen">${str}&lt;/font>` : `&lt;font color="lightcoral">${str}&lt;/font>`),
+};
+
+/** Helper to format numeric values */
+function num(value) {
+  if (value) return value.toLocaleString();
+  return color.greyed('N/A');
+}
+
+/** Helper that returns hex string from given RBG values */
+function rgb(r, g, b) {
+  return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
+}
+
+/** Helper to parse numeric values */
+function int(value) {
+  return value ? parseInt(value.replace(/,/g, ''), 10) : 0;
+}
+
+/** Creates new browser tab and loads entire data structure in JSON format */
+async function getJSON() {
+  const tab = window.open('about:blank', '_blank');
+  tab.document.write(`&lt;html>&lt;body>&lt;pre>${JSON.stringify(data, null, 2)}&lt;pre>&lt;body>&lt;html>`);
+  tab.document.close();
+}
+
+/** Gets time series data from JHU: Data is in CSV and parsed to JSON */
+async function getJHUSeries() {
+  const body = await get('https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_confirmed_global.csv');
+  const lines = body.split('\n');
+  data.jhuhistory = [];
+  for (const i in lines) {
+    const fields = lines[i].split(',');
+    const header = fields.splice(0, 4);
+    let diff = [];
+    for (const f in fields) {
+      if (fields[f - 1]) diff.push(fields[f] - fields[f - 1]);
+      else diff.push(fields[f]);
+    }
+    let State = '';
+    let Country = '';
+    // needed to sanitize data to match wmo data
+    // also some countries report only per-region and wihout global value so pick a representative region
+    switch (header[1]) {
+      case '"Korea':
+        State = header[0];
+        Country = 'S. Korea';
+        diff = diff.slice(2, diff.length);
+        break;
+      case 'Canada':
+        State = header[0] === 'Quebec' ? '' : header[0];
+        Country = header[1];
+        break;
+      case 'China':
+        State = header[0] === 'Henan' ? '' : header[0];
+        Country = header[1];
+        break;
+      case 'Australia':
+        State = header[0] === 'Victoria' ? '' : header[0];
+        Country = header[1];
+        break;
+      case 'United Kingdom':
+        State = header[0];
+        Country = 'UK';
+        break;
+      case 'United Arab Emirates':
+        State = header[0];
+        Country = 'UAE';
+        break;
+      default:
+        State = header[0];
+        Country = header[1];
+    }
+    data.jhuhistory.push({ State, Country, Lat: header[2], Lon: header[3], Data: diff });
+  }
+}
+
+/** Get latest data from JHU: Data is in CSV and parsed to JSON */
+async function getJHULatest() {
+  const base = 'https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_daily_reports';
+  const date = new Date();
+  let file;
+  let body = null;
+  // guest file name based on today, yesterday and day before yesterday
+  if (!body) {
+    date.setDate(date.getDate() - 0);
+    file = `${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')}-${date.getFullYear().toString().padStart(2, '0')}`;
+    body = await get(`${base}/${file}.csv`);
+  }
+  if (!body) {
+    date.setDate(date.getDate() - 1);
+    file = `${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')}-${date.getFullYear().toString().padStart(2, '0')}`;
+    body = await get(`${base}/${file}.csv`);
+  }
+  if (!body) {
+    date.setDate(date.getDate() - 2);
+    file = `${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')}-${date.getFullYear().toString().padStart(2, '0')}`;
+    body = await get(`${base}/${file}.csv`);
+  }
+  if (!body) return;
+  const lines = body.split('\n');
+  const header = lines[0].split(',');
+  let temp = [];
+  for (const i in lines) {
+    const fields = lines[i].split(',');
+    const obj = {};
+    for (const j in fields) {
+      obj[header[j]] = fields[j];
+    }
+    temp.push(obj);
+  }
+  temp = temp.filter((val) => (val.Confirmed &amp;&amp; parseInt(val.Confirmed, 10) > 0));
+  temp = temp.filter((val) => (val.Lat &amp;&amp; parseFloat(val.Lat) !== 0.0));
+  data.jhulatest = temp;
+}
+
+/** Get USA data: Data is in JSON */
+async function getUSAData() {
+  const temp = await get('https://covidtracking.com/api/v1/us/current.json');
+  data.usa = temp[0];
+  data.usaHistory = await get('https://covidtracking.com/api/us/daily');
+  data.states = await get('https://covidtracking.com/api/states');
+  data.statesInfo = await get('https://covidtracking.com/api/states/info');
+  data.statesHistory = await get('https://covidtracking.com/api/states/daily');
+  data.news = await get('https://covidtracking.com/api/press');
+}
+
+/** Get Florida data: Data is in JSON */
+async function getFLData() {
+  // use query builder at https://services1.arcgis.com/CY1LXxl9zlJeBuRZ/arcgis/rest/services/Florida_COVID19_Cases/FeatureServer/0
+  // eslint-disable-next-line max-len
+  const temp = await get('https://services1.arcgis.com/CY1LXxl9zlJeBuRZ/arcgis/rest/services/Florida_COVID19_Cases/FeatureServer/0//query?where=1%3D1&amp;objectIds=&amp;time=&amp;geometry=&amp;geometryType=esriGeometryEnvelope&amp;inSR=&amp;spatialRel=esriSpatialRelIntersects&amp;resultType=standard&amp;distance=0.0&amp;units=esriSRUnit_Meter&amp;returnGeodetic=false&amp;outFields=*&amp;returnGeometry=false&amp;returnCentroid=false&amp;featureEncoding=esriDefault&amp;multipatchOption=xyFootprint&amp;maxAllowableOffset=&amp;geometryPrecision=&amp;outSR=&amp;datumTransformation=&amp;applyVCSProjection=false&amp;returnIdsOnly=false&amp;returnUniqueIdsOnly=false&amp;returnCountOnly=false&amp;returnExtentOnly=false&amp;returnQueryGeometry=false&amp;returnDistinctValues=false&amp;cacheHint=false&amp;orderByFields=&amp;groupByFieldsForStatistics=&amp;outStatistics=&amp;having=&amp;resultOffset=&amp;resultRecordCount=&amp;returnZ=true&amp;returnM=true&amp;returnExceededLimitFeatures=true&amp;quantizationParameters=&amp;sqlFormat=standard&amp;f=pjson&amp;token=');
+  data.florida = [];
+  if (!temp || !temp.features) return;
+  for (const county of temp.features) {
+    data.florida.push(county.attributes);
+  }
+}
+
+/** Get WMO data: Data is in HTML and parsed to JSON */
+async function getWMOData() {
+  const html = await proxy('https://www.worldometers.info/coronavirus/');
+  if (!html) return;
+  let table;
+  table = $(html).find('#main_table_countries_today > tbody:nth-child(2) > tr');
+  data.countries = [];
+  for (const item of table) {
+    const fields = $(item).find('td');
+    const country = {
+      name: fields[0].innerText,
+      link: $(fields[0].innerHTML).attr('href') || '',
+      totalCases: int(fields[1].innerText),
+      liveCases: int(fields[2].innerText),
+      totalDeaths: int(fields[3].innerText),
+      liveDeaths: int(fields[4].innerText),
+      totalRecovered: int(fields[5].innerText),
+      activeCases: int(fields[6].innerText),
+      criticalCases: int(fields[7].innerText),
+      densityCases: int(fields[8].innerText),
+      densityDeaths: parseFloat(fields[9].innerText),
+      totalTested: int(fields[10].innerText),
+      densityTested: int(fields[11].innerText),
+    };
+    data.countries.push(country);
+  }
+  data.countries.sort((a, b) => (a.totalCases &lt; b.totalCases ? 1 : -1));
+  table = $(html).find('#main_table_countries_yesterday > tbody:nth-child(2) > tr');
+  const yesterday = [];
+  for (const item of table) {
+    const fields = $(item).find('td');
+    const country = {
+      name: fields[0].innerText,
+      newCases: int(fields[2].innerText),
+      newDeaths: int(fields[4].innerText),
+    };
+    yesterday.push(country);
+  }
+  let tested = 0;
+  let testedAvg = 0;
+  for (const country of data.countries) {
+    tested += country.totalTested;
+    testedAvg += country.densityTested;
+    const old = yesterday.find((a) => a.name === country.name);
+    if (old) {
+      country.newCases = old.newCases;
+      country.newDeaths = old.newDeaths;
+    }
+  }
+  testedAvg /= data.countries.length;
+  const world = data.countries.find((a) => a.name === 'World');
+  world.totalTested = tested;
+  world.densityTested = Math.round(testedAvg);
+  data.world = {
+    totalCases: world.totalCases,
+    newCases: world.newCases,
+    densityCases: world.densityCases,
+    densityDeaths: world.densityDeaths,
+    densityTested: Math.round(testedAvg),
+    activeCases: world.activeCases,
+    totalTested: tested,
+    totalDeaths: world.totalDeaths,
+    newDeaths: world.newDeaths,
+    totalRecovered: world.totalRecovered,
+    criticalCases: world.criticalCases,
+  };
+}
+
+/** Print HTML title section */
+async function printTitle() {
+  if (!data.status.world || !data.status.usa || !data.status.statesInfo || !data.status.countries || !data.status.loc) {
+    setTimeout(printTitle, 100);
+    return;
+  }
+  // print world info
+  document.getElementById('div-title').innerHTML = `
+    &lt;h1>${color.blue('Covid-19 World Data')} &amp;nbsp &amp;nbsp | 
+    Tested: ${num(data.world.totalTested)} | 
+    Positive: ${num(data.world.totalCases)} +${num(data.world.newCases)} | 
+    Active: ${num(data.world.activeCases)} | 
+    Critical: ${num(data.world.criticalCases)} | 
+    Recovered: ${num(data.world.totalRecovered)} | 
+    Deaths: ${num(data.world.totalDeaths)} +${num(data.world.newDeaths)} | 
+    &lt;/h1>`;
+  // get geoip
+  let text = `&lt;h1>
+    Location data for ${color.yellow(data.loc.isp || 'unknown')} user from ${color.yellow(data.loc.city || '')} 
+    ${color.yellow(data.loc.region || '')} ${color.yellow(data.loc.country || '')} ${color.yellow(data.loc.continent || '')}
+    &lt;br>`;
+  if (data.loc.country === 'United States') {
+    // print geoip usa info
+    text += `${color.blue('United States')} &amp;nbsp &amp;nbsp | 
+      Tested: ${num(data.usa.totalTestResults)} +${num(data.usaHistory[0].totalTestResultsIncrease)} | 
+      Positive: ${num(data.usa.positive)} +${num(data.usaHistory[0].positiveIncrease)} | 
+      Hospitalized: ${num(data.usa.hospitalized)} +${num(data.usaHistory[0].hospitalizedIncrease)} | 
+      Critical: ${num(data.usaHistory[0].inIcuCurrently)} +${data.usaHistory[0].inIcuCurrently - data.usaHistory[1].inIcuCurrently} | 
+      Deaths: ${num(data.usa.death)} +${num(data.usaHistory[0].deathIncrease)} | 
+      Updated: ${moment(data.usa.lastModified).format('ddd HH:mm')}
+      &lt;br>`;
+    // print geoip state
+    const info = data.statesInfo.find((a) => data.loc.region === a.name);
+    let state;
+    if (info) state = data.states.find((a) => info.state === a.state);
+    if (state) {
+      const history = data.statesHistory.filter((a) => state.state === a.state);
+      const yesterday = history[0].positive === state.positive ? history[1] : history[0];
+      text += `
+        &lt;a href="${info.covid19Site}">${color.blue(info.name)}&lt;/a> &amp;nbsp &amp;nbsp | 
+        Tested: ${num(state.totalTestResults)} +${num(state.totalTestResults - yesterday.totalTestResults)} | 
+        Positive: ${num(state.positive)} +${num(state.positive - yesterday.positive)} | 
+        Hospitalized: ${num(state.hospitalized)} +${num(Math.abs(state.hospitalized ? state.hospitalized - yesterday.hospitalized : 0))} | 
+        Deaths: ${num(state.death)} +${num(Math.abs(state.death - yesterday.death))} | 
+        Updated: ${moment(state.lastUpdateEt).add(19, 'years').format('ddd HH:mm')}
+        &lt;br>`;
+    }
+  } else {
+    // print geoip country info
+    if (data.loc.country === 'United Kingdom') data.loc.country = 'UK';
+    const country = data.countries.find((a) => a.name === data.loc.country);
+    if (country) {
+      text += `
+        &lt;a href="https://www.worldometers.info/coronavirus/${country.link}">${color.blue(country.name)}&lt;/a> &amp;nbsp &amp;nbsp | 
+        Tested: ${num(country.totalTested)} | 
+        Positive: ${num(country.totalCases)} +${num(country.newCases)} yesterday +${num(country.liveCases)} today | 
+        Active: ${num(country.activeCases)} | 
+        Critical: ${country.criticalCases} | 
+        Deaths: ${num(country.totalDeaths)} +${num(country.newDeaths)} yesterday +${num(country.liveDeaths)} today
+        &lt;br>`;
+    }
+  }
+  text += '&lt;/h1';
+  document.getElementById('div-location').innerHTML = text;
+}
+
+/** Print HTML line for Miami-Dade county */
+async function printMiami() {
+  if (!data.status.florida) {
+    setTimeout(printMiami, 100);
+    return;
+  }
+  const miami = data.florida.find((a) => a.COUNTYNAME === 'MIAMI-DADE');
+  if (!miami) return;
+  document.getElementById('div-miami').innerHTML = `
+    &lt;b>${color.blue('Miami-Dade Data')}&lt;/b> | 
+    Tested: ${num(miami.PUILab_Yes)} | 
+    Positive: ${num(miami.TPositive)} | 
+    Pending: ${num(miami.TPending)} | 
+    Hospitalized: ${num(miami.C_Hosp_Yes)} | 
+    Deaths: ${num(miami.Deaths)}
+    `;
+}
+
+/** Print HTML table for the United States */
+async function printStatesTable() {
+  if (!data.status.states || !data.status.statesHistory || !data.status.statesInfo) {
+    setTimeout(printStatesTable, 100);
+    return;
+  }
+  const table = document.getElementById('table-states');
+  let text = `
+      &lt;tr>&lt;th>State&lt;/th>&lt;th>Tested&lt;/th>&lt;th>(new)&lt;/th>&lt;th>Positive&lt;/th>&lt;th>(new)&lt;/th>&lt;th>History: new cases over 1 Month&lt;/th>
+      &lt;th>Pending&lt;/th>&lt;th>Hospitalized&lt;/th>&lt;th>(new)&lt;/th>&lt;th>Deaths&lt;/th>&lt;th>(new)&lt;/th>&lt;th>Updated&lt;/th>&lt;/tr>
+    `;
+  for (const state of data.states) {
+    const info = data.statesInfo.find((a) => state.state === a.state);
+    const history = data.statesHistory.filter((a) => state.state === a.state);
+    const yesterday = history[0].positive === state.positive ? history[1] : history[0];
+    text += `&lt;tr>
+      &lt;td style="text-align: left">&lt;b>${state.state}&lt;/b>: &lt;a href="${info.covid19Site}">${info.name}&lt;/a>&lt;/td>
+      &lt;td>${num(state.totalTestResults)}&lt;/td>
+      &lt;td>${num(state.totalTestResults - yesterday.totalTestResults)}&lt;/td>
+      &lt;td>${num(state.positive)}&lt;/td>
+      &lt;td>${color.ok(num(state.positive - yesterday.positive), 100 * (state.positive - yesterday.positive) / state.positive &lt; 10)}&lt;/td>
+      &lt;td>&lt;span class="chart-state-new-${state.state}">&lt;/span>&lt;/td>
+      &lt;td>${color.ok(num(state.pending || yesterday.pending), 100 * (state.pending || yesterday.pending) / state.totalTestResults &lt; 10)}&lt;/td>
+      &lt;td>${num(state.hospitalized)}&lt;/td>
+      &lt;td>${num(Math.abs(state.hospitalized ? state.hospitalized - yesterday.hospitalized : 0))}&lt;/td>
+      &lt;td>${num(state.death)}&lt;/td>
+      &lt;td>${num(Math.abs(state.death - yesterday.death))}&lt;/td>
+      &lt;td>${moment(state.lastUpdateEt).add(19, 'years') > moment().subtract(2, 'days') ? color.greyed(state.lastUpdateEt) : color.red(state.lastUpdateEt)}&lt;/td>
+      &lt;/tr>`;
+  }
+  table.innerHTML = text;
+  if (data.states.length) sorttable.makeSortable(table);
+}
+
+/** Print HTML table for world countries */
+async function printCountriesTable() {
+  if (!data.status.countries) {
+    setTimeout(printCountriesTable, 100);
+    return;
+  }
+  const table = document.getElementById('table-countries');
+  let text = `&lt;tr>
+    &lt;th>Country&lt;/th>&lt;th>Cases&lt;/th>&lt;th>(new/day)&lt;/th>&lt;th>(new/current)&lt;/th>&lt;th>History: new cases over 2 months&lt;/th>&lt;th>Tested&lt;/th>
+    &lt;th>Deaths&lt;/th>&lt;th>(new/24h)&lt;/th>&lt;th>(new/current)&lt;/th>&lt;th>Recovered&lt;/th>&lt;th>Active&lt;/th>&lt;th>Critical&lt;/th>&lt;th>Tested/1M&lt;/th>&lt;th>Cases/1M&lt;/th>&lt;th>Deaths/1M&lt;/th>
+    &lt;/tr>`;
+  const countries = data.countries.length ? data.countries : [];
+  if (countries.length > maxItems) countries.length = maxItems;
+  for (const country of countries) {
+    text += `&lt;tr>
+      &lt;td style="text-align: left">&lt;b>&lt;a href="https://www.worldometers.info/coronavirus/${country.link}">${country.name}&lt;/a>&lt;/b>&lt;/td>
+      &lt;td>${num(country.totalCases)}&lt;/td>
+      &lt;td>${color.ok(num(country.newCases), 100 * country.newCases / country.totalCases &lt; 8)}&lt;/td>
+      &lt;td>${color.ok(num(country.liveCases), country.liveCases &lt; country.newCases)}&lt;/td>
+      &lt;td>&lt;span class="chart-country-total-${country.name.replace(/ /g, '').replace(/\./g, '')}">&lt;/span>&lt;/td>
+      &lt;td>${num(country.totalTested)}&lt;/td>
+      &lt;td>${num(country.totalDeaths)}&lt;/td>
+      &lt;td>${color.ok(num(country.newDeaths), 100 * country.newDeaths / country.totalDeaths &lt; 8)}&lt;/td>
+      &lt;td>${color.ok(num(country.liveDeaths), country.liveDeaths &lt; country.newDeaths)}&lt;/td>
+      &lt;td>${color.ok(num(country.totalRecovered), 100 * country.totalRecovered / country.totalCases > 35)}&lt;/td>
+      &lt;td>${color.ok(num(country.activeCases), 100 * country.activeCases / country.totalCases &lt; 50)}&lt;/td>
+      &lt;td>${color.ok(num(country.criticalCases), country.criticalCases &lt; country.totalRecovered)}&lt;/td>
+      &lt;td>${color.ok(num(country.densityTested), country.densityTested > data.world.densityTested)}&lt;/td>
+      &lt;td>${color.ok(num(country.densityCases), country.densityCases &lt; data.world.densityCases)}&lt;/td>
+      &lt;td>${color.ok(country.densityDeaths.toFixed(2), country.densityDeaths &lt; data.world.densityDeaths)}&lt;/td>
+      &lt;/tr>`;
+  }
+  table.innerHTML = text;
+  if (data.countries.length) sorttable.makeSortable(table);
+}
+
+/** Render trendline for USA within countries table */
+async function renderUSATrend() {
+  if (!data.status.countries || !data.status.usaHistory) {
+    setTimeout(renderUSATrend, 100);
+    return;
+  }
+  const country = data.countries.find((a) => a.name === 'USA');
+  data.usaHistory.reverse();
+  const trend = [];
+  for (const day in data.usaHistory) {
+    const val = data.usaHistory[day - 1] ? data.usaHistory[day].positive - data.usaHistory[day - 1].positive : data.usaHistory[day].positive;
+    trend.push(val);
+  }
+  $(`.chart-country-total-${country.name}`)
+    .sparkline(trend, { type: 'bar', barColor: 'lightyellow', zeroColor: '', tooltipFormat: `&lt;span>${country.name}: {{value}}&lt;/span>` });
+  data.usaHistory.reverse();
+}
+
+/** Render trendlines for individual countries */
+async function renderCountriesTrend() {
+  if (!data.status.countries || !data.status.jhuHistory) {
+    setTimeout(renderCountriesTrend, 100);
+    return;
+  }
+  for (const country of data.countries) {
+    if (country.name !== 'USA') {
+      const history = data.jhuhistory.find((a) => country.name === a.Country &amp;&amp; a.State === '');
+      let trend = history &amp;&amp; history.Data ? history.Data : [];
+      trend = trend.map((item) => (item > 1 ? item : null));
+      if (trend.length > 60) trend.splice(0, trend.length - 60);
+      $(`.chart-country-total-${country.name.replace(/ /g, '').replace(/\./g, '')}`)
+        .sparkline(trend, { type: 'bar', barColor: 'lightyellow', zeroColor: '', tooltipFormat: `&lt;span>${country.name}: {{value}}&lt;/span>` });
+    }
+  }
+}
+
+/** Render trendlines for individual states in USA */
+async function renderStatesTrend() {
+  if (!data.status.states || !data.status.statesHistory) {
+    setTimeout(renderStatesTrend, 100);
+    return;
+  }
+  for (const state of data.states) {
+    const trend = [];
+    const history = data.statesHistory.filter((a) => state.state === a.state);
+    for (const day of history.reverse()) {
+      trend.push(day.positiveIncrease);
+    }
+    if (trend.length > 30) trend.splice(0, trend.length - 30);
+    $(`.chart-state-new-${state.state}`)
+      .sparkline(trend, { type: 'bar', barColor: 'lightyellow', zeroColor: '', tooltipFormat: `&lt;span>${state.state}: {{value}}&lt;/span>` });
+  }
+}
+
+/** Initialize map canvas */
+async function initMap() {
+  const div = document.getElementById('div-map');
+  const canvas = document.getElementById('canvas-map');
+  canvas.width = div.clientWidth - 16;
+  canvas.height = Math.round(div.clientWidth / 4 * 3);
+  canvas.style.opacity = 0.75;
+  div.style.backgroundImage = 'url("https://vladmandic.github.io/picovid/assets/world.webp")';
+}
+
+/** Render infection rates on map canvas */
+async function renderMap() {
+  if (!data.status.jhuLatest) {
+    setTimeout(renderMap, 100);
+    return;
+  }
+  const canvas = document.getElementById('canvas-map');
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = 'lightcoral';
+  for (const item of data.jhulatest) {
+    const size = Math.round(Math.sqrt(Math.sqrt(3 * item.Confirmed)));
+    // conversion of geo coordinates to screen coordinates
+    const posy = (90 - parseFloat(item.Lat)) * canvas.height / 270 - 130;
+    const posx = (parseFloat(item.Long_) + 180) * canvas.width / 360;
+    ctx.fillStyle = rgb(250, 128 - 2 * size, 128 - size);
+    ctx.beginPath();
+    ctx.arc(posx, posy, size, 0, 2 * Math.PI, false);
+    ctx.fill();
+  }
+  // find closest reporting county based on geo coordinates
+  // const near = data.jhulatest.filter((a) => (Math.round(a.Lat) === Math.round(data.loc.lat) &amp;&amp; Math.round(a.Long_) === Math.round(data.loc.lon)));
+  // console.log('Location', data.loc);
+  // console.log('Nearest match', near);
+}
+
+/** Print HTML news list */
+async function printNews() {
+  if (!data.status.news) {
+    setTimeout(printNews, 100);
+    return;
+  }
+  const div = document.getElementById('div-news');
+  let text = '&lt;h1>In The News&lt;/h1>';
+  if (data.news.length > 30) data.news.length = 30;
+  for (const item of data.news) {
+    text += `${item.publishDate} &amp;nbsp &lt;b>${color.blue(item.publication)}&lt;/b>: &amp;nbsp &lt;a href="${item.url}">${item.title}&lt;/a>&lt;br>`;
+  }
+  div.innerHTML = text;
+}
+
+/** Check if data is loaded for each datasource every 100ms */
+async function status() {
+  data.status = {
+    loc: data.loc &amp;&amp; data.loc.country !== null,
+    world: data.world &amp;&amp; data.world.totalCases > 0,
+    countries: data.countries &amp;&amp; data.countries.length > 0,
+    usa: data.usa &amp;&amp; data.usa.totalTestResults > 0,
+    usaHistory: data.usaHistory &amp;&amp; data.usaHistory.length > 0,
+    states: data.states &amp;&amp; data.states.length > 0,
+    statesHistory: data.statesHistory &amp;&amp; data.statesHistory.length > 0,
+    statesInfo: data.statesInfo &amp;&amp; data.statesInfo.length > 0,
+    jhuLatest: data.jhulatest &amp;&amp; data.jhulatest.length > 0,
+    jhuHistory: data.jhuhistory &amp;&amp; data.jhuhistory.length > 0,
+    florida: data.florida &amp;&amp; data.florida.length > 0,
+    news: data.news &amp;&amp; data.news.length > 0,
+  };
+  // console.log(data.status);
+  document.getElementById('div-status').innerHTML = `&lt;b>Data Sources Status:&lt;/b> 
+    ${color.ok('World Latest', data.status.world)} | 
+    ${color.ok('Countries', data.status.countries)} | 
+    ${color.ok('USA Current', data.status.usa)} | 
+    ${color.ok('USA History', data.status.usaHistory)} | 
+    ${color.ok('USA States', data.status.statesHistory)} | 
+    ${color.ok('JHU Latest', data.status.jhuLatest)} | 
+    ${color.ok('JHU Series', data.status.jhuHistory)} | 
+    ${color.ok('Florida', data.status.florida)} | 
+    ${color.ok('News', data.status.news)}
+    `;
+  setTimeout(status, 100);
+}
+
+/** Filter method invoked by input field keypress that shows/hides matching table records */
+async function filter() {
+  const q = new RegExp(this.value, 'i');
+  $('#table-countries > tbody').find('tr').each(function match() {
+    if ($(this).children('td:first').text().match(q)) $(this).show();
+    else $(this).hide();
+  });
+  $('#table-states > tbody').find('tr').each(function match() {
+    if ($(this).children('td:first').text().match(q)) $(this).show();
+    else $(this).hide();
+  });
+}
+
+/** Print HTML notes fetched from GitHub in markdown format */
+async function printNotes() {
+  const md = await get('https://vladmandic.github.io/picovid/README.md');
+  document.getElementById('div-notes').innerHTML = marked(md);
+}
+
+async function getGeoIP() {
+  data.loc = await get('https://extreme-ip-lookup.com/json/');
+  if (!data.loc || !data.loc.country) data.loc = { county: 'unknown', region: 'unknown' };
+}
+
+/** Application entry point */
+async function main() {
+  // get all datasets
+  getGeoIP();
+  getUSAData();
+  getWMOData();
+  getFLData();
+  getJHUSeries();
+  getJHULatest();
+  // init status loop
+  await status();
+  // render all data
+  printTitle();
+  printMiami();
+  printNotes();
+  printStatesTable();
+  printCountriesTable();
+  renderUSATrend();
+  renderStatesTrend();
+  renderCountriesTrend();
+  initMap();
+  renderMap();
+  printNews();
+  // register handlers
+  $('#filter').on('keyup', filter);
+  $('#raw-json').click(getJSON);
+  // reload every 30min
+  setTimeout(main, 30 * 60 * 1000);
+}
+
+window.onload = main();
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Global</h3><ul><li><a href="global.html#color">color</a></li><li><a href="global.html#data">data</a></li><li><a href="global.html#filter">filter</a></li><li><a href="global.html#get">get</a></li><li><a href="global.html#getFLData">getFLData</a></li><li><a href="global.html#getJHULatest">getJHULatest</a></li><li><a href="global.html#getJHUSeries">getJHUSeries</a></li><li><a href="global.html#getJSON">getJSON</a></li><li><a href="global.html#getUSAData">getUSAData</a></li><li><a href="global.html#getWMOData">getWMOData</a></li><li><a href="global.html#initMap">initMap</a></li><li><a href="global.html#int">int</a></li><li><a href="global.html#main">main</a></li><li><a href="global.html#num">num</a></li><li><a href="global.html#printCountriesTable">printCountriesTable</a></li><li><a href="global.html#printMiami">printMiami</a></li><li><a href="global.html#printNews">printNews</a></li><li><a href="global.html#printNotes">printNotes</a></li><li><a href="global.html#printStatesTable">printStatesTable</a></li><li><a href="global.html#printTitle">printTitle</a></li><li><a href="global.html#proxy">proxy</a></li><li><a href="global.html#renderCountriesTrend">renderCountriesTrend</a></li><li><a href="global.html#renderMap">renderMap</a></li><li><a href="global.html#renderStatesTrend">renderStatesTrend</a></li><li><a href="global.html#renderUSATrend">renderUSATrend</a></li><li><a href="global.html#rgb">rgb</a></li><li><a href="global.html#status">status</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.3</a> on Mon Apr 06 2020 14:08:20 GMT-0400 (Eastern Daylight Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>
