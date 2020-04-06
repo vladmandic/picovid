@@ -8,20 +8,15 @@
     <meta name="Description" content="PiCovid: Covid-19 Tracker; Author: Vladimir Mandic <mandic00@live.com>">
     <meta name="viewport" content="width=device-width, initial-scale=0.4, minimum-scale=0.1, maximum-scale=2.0, shrink-to-fit=yes, user-scalable=yes">
     <meta name="theme-color" content="#555555"/>
+    <link rel="manifest" href="manifest.json">
     <link rel="shortcut icon" href="favicon.ico" type="image/x-icon">
-    <!--
-    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css">
-    <link rel='stylesheet' href='https://fonts.googleapis.com/css?family=Roboto'>
-    <script defer type="text/javascript" src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
-    <script defer type="text/javascript" src="https://omnipotent.net/jquery.sparkline/2.1.2/jquery.sparkline.min.js"></script>
-    <script defer type="text/javascript" src="https://momentjs.com/downloads/moment.min.js"></script>
-    <script defer type="text/javascript" src="https://unpkg.com/sorttable@1.0.2/sorttable.js"></script>
-    -->
+    <link rel="apple-touch-icon" href="https://vladmandic.github.io/picovid/assets/dash-256.png">
     <link rel="stylesheet" href="https://vladmandic.github.io/picovid/assets/bootstrap.css">
     <script defer type="text/javascript" src="https://vladmandic.github.io/picovid/assets/jquery.js"></script>
     <script defer type="text/javascript" src="https://vladmandic.github.io/picovid/assets/sparkline.js"></script>
     <script defer type="text/javascript" src="https://vladmandic.github.io/picovid/assets/moment.js"></script>
     <script defer type="text/javascript" src="https://vladmandic.github.io/picovid/assets/sorttable.js"></script>
+    <script defer type="text/javascript" src="https://vladmandic.github.io/picovid/assets/marked.js"></script>
     <style>
       @font-face { font-family: 'Roboto'; font-style: normal; font-weight: 400; src: local('Roboto'), local('Roboto-Regular'), url('https://vladmandic.github.io/picovid/assets/roboto.ttf') format('truetype'); }
       ::-webkit-scrollbar { width: 20px; }
@@ -71,7 +66,7 @@
       </span>
       <span id="div-miami" style="width: 100%" class="text-right"></span>
       <span id="div-status" style="width: 100%" class="text-right"></span>
-      <span style="margin-left: 20px; margin-right: 20px"><b>Filter data:</b></span><input type="text" id="filter" placeholder="Type to filter..." />
+      <span style="margin-left: 20px; margin-right: 20px"><label><b>Filter data:</b>&nbsp<input type="text" id="filter" placeholder="Type to filter..." /></label></span>
     </div>
     <div class="row">
       <div class="col" style="max-height: 1000px; min-width: 1500px"><table id="table-countries"></table></div>
@@ -83,26 +78,7 @@
       </div>
     </div>
     <div class="row">
-      <div class="col" id="div-notes">
-        <h1>Why Pi*anything? Because I use my Raspberry Pi 4 as a development server</h1>
-        <h1>Credits:</h1><ul>
-          <li><a href="https://covidtracking.com/">The COVID Tracking Project</a></li>
-          <li><a href="https://www.worldometers.info/coronavirus/">Worldometer</a></li>
-          <li><a href="https://www.arcgis.com/apps/opsdashboard/index.html#/bda7594740fd40299423467b48e9ecf6">Johns Hopkins CSSE</a></li>
-          <li><a href="https://floridahealthcovid19.gov/">Florida Department of Health</a></li>
-        </ul>
-        <h1>Notes:</h1><ul>
-          <li>Tables are sortable, just click on a header</li>
-          <li>Countries daily new cases and deaths is reported for last full 24h period and for current day so far</li>
-          <li>Counties red/green markers per 1M indicate country compared to world average</li>
-          <li>Counties red/green markers for new data indicate growth rate below threshold or recovery higher than growth</li>
-          <li>Countries link to Worldometers.info per-country web page</li>
-          <li>States hospitalized cases is not reported regularly by all states</li>
-          <li>States pending cases is reported by only few states</li>
-          <li>States link to official state web page</li>        
-          <li>Map infection scale is a square root function</li>
-        </ul>
-      </div>
+      <div class="col" id="div-notes"></div>
       <div class="col" id="div-news"></div>
     </div>
 
@@ -493,7 +469,7 @@
         canvas.width = div.clientWidth - 16;
         canvas.height = Math.round(div.clientWidth / 4 * 3);
         canvas.style.opacity = 0.75;
-        div.style.backgroundImage = 'url("https://vladmandic.github.io/picovid/assets/world.jpg")';
+        div.style.backgroundImage = 'url("https://vladmandic.github.io/picovid/assets/world.webp")';
       }
 
       async function renderMap() {
@@ -546,6 +522,11 @@
         });
       }
 
+      async function printNotes() {
+        const md = await get('https://vladmandic.github.io/picovid/README.md');
+        document.getElementById('div-notes').innerHTML = marked(md);
+      }
+
       async function main() {
         initMap();
         await getWMOData();
@@ -556,11 +537,11 @@
         printStatesTable();
         renderStatesTrend();
         renderUSATrend();
+        printNotes();
         getJHUSeries().then(() => renderCountriesTrend());
         getJHULatest().then(() => renderMap());
         // printNews();
         $('#filter').on('keyup', filter);
-        // $('#filter').keydown(filter);
         setTimeout(main, 30 * 60 * 1000);
       }
 
