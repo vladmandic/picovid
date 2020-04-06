@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <title>pi covid-19 tracker</title>
+    <title>Pi Covid-19 Tracker</title>
     <meta http-equiv="content-type">
     <meta content="text/html">
     <meta charset="UTF-8">
@@ -28,8 +28,8 @@
       .row { width: 100% }
       .col { background: #555555; text-align: left; margin: 8px; padding: 8px; width: 100%; box-shadow: 5px 5px #222222; overflow-y: auto; }
       .jqstooltip { background: #567d66 !important; border: 0px !important; padding: 8px; width: 100px !important; height: 30px !important }
-      h1 { font-size: 1.3rem; margin-left: 8px; font-weight: bold; letter-spacing: 1px; line-height: 30px }
-      h2 { font-size: 1.0rem; margin: 0px; padding: 0px; font-weight: bold; letter-spacing: 1px }
+      h1 { font-size: 1.3rem; margin-left: 8px; font-weight: bold; line-height: 30px }
+      h2 { font-size: 1.0rem; margin: 0px; padding: 0px; font-weight: bold; }
       a { color: white }
       table { margin: 10px }
       th { padding-left: 8px; color: lightblue; font-weight: bold; background: grey; line-height: 2rem; }
@@ -52,16 +52,24 @@
       <h2>Error: JavaScript is disabled</h2>
     </noscript>
     <br>
-    <div class="row">
+      <nav style="background-color: grey; margin: 0px 0px 30px 0px; padding: 4px; position: absolute; top: 0; left: 0; width: 100%; text-align: right;"><b>
+        <a href="#div-status">Status</a> &nbsp | &nbsp 
+        <a href="#table-countries">World Data</a> &nbsp | &nbsp 
+        <a href="#table-states">USA Data</a> &nbsp | &nbsp 
+        <a href="#div-map">Infection Map</a> &nbsp | &nbsp 
+        <span id="raw-json" style="color: white">Raw Data</span> &nbsp | &nbsp 
+        <a href="#notes">Notes</a> &nbsp 
+      </b></nav>
+    <div class="row" style="margin-top: 20px">
       <span id="div-title"></span>
       <span id="div-location"></span>
     </div>
     <div class="row">
       <span id="div-author" style="width: 100%" class="text-right">
         <h2>
-          Author: <a href="mailto:mandic00@live.com">V. Mandic</a> | 
-          Sources: <a href="https://github.com/vladmandic/picovid">GitHub</a> | 
-          &nbsp Sources: <a href="https://vladmandic.github.io/picovid/covid.html">Live Link</a>
+          Author: <a href="https://github.com/vladmandic">V. Mandic</a> &nbsp | &nbsp 
+          Sources: <a href="https://github.com/vladmandic/picovid">GitHub</a> &nbsp | &nbsp 
+          <a href="https://vladmandic.github.io/picovid/covid.html">Live Link</a>
         </h2>
       </span>
       <span id="div-miami" style="width: 100%" class="text-right"></span>
@@ -84,6 +92,7 @@
 
     <script>
       const maxItems = 75;
+      const data = { world: {}, countries: [], usa: {}, usaHistory: [], states: [], statesInfo: [], statesHistory: [], florida: [], news: [], jhulatest: [], jhuhistory: [] };
       
       async function get(item) {
         let http = null;
@@ -99,7 +108,7 @@
         http = res && res.ok ? await res.text() : '';
         return http;
       }
-
+      
       const color = {
         white: (str) => `<font color="white">${str}</font>`,
         black: (str) => `<font color="black">${str}</font>`,
@@ -125,7 +134,11 @@
         return value ? parseInt(value.replace(/,/g, ''), 10) : 0;
       }
 
-      const data = { usa: {}, usaHistory: {}, world: {}, countries: {} };
+      async function getJSON() {
+        const tab = window.open('about:blank', '_blank');
+        tab.document.write(`<html><body><pre>${JSON.stringify(data, null, 2)}<pre><body><html>`);
+        tab.document.close();
+      }
 
       async function getJHUSeries() {
         const body = await get('https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_confirmed_global.csv');
@@ -299,19 +312,22 @@
 
       async function printTitle() {
         document.getElementById('div-title').innerHTML = `
-          <h1>${color.blue('Covid-19 World Data')} | 
+          <h1>${color.blue('Covid-19 World Data')} &nbsp &nbsp | 
           Tested: ${num(data.world.totalTested)} | 
           Positive: ${num(data.world.totalCases)} +${num(data.world.newCases)} | 
           Active: ${num(data.world.activeCases)} | 
           Critical: ${num(data.world.criticalCases)} | 
           Recovered: ${num(data.world.totalRecovered)} | 
-          Deaths: ${num(data.world.totalDeaths)} +${num(data.world.newDeaths)}
+          Deaths: ${num(data.world.totalDeaths)} +${num(data.world.newDeaths)} | 
           </h1>`;
-        const loc = await get('https://extreme-ip-lookup.com/json/');
-        if (!loc || !loc.country) return;
-        let text = `<h1>Location data for ${color.yellow(loc.isp)} user from ${color.yellow(loc.city)} ${color.yellow(loc.region)} ${color.yellow(loc.country)} ${color.yellow(loc.continent)}<br>`;
-        if (loc.country === 'United States') {
-          text += `${color.blue('United States')} | 
+        data.loc = await get('https://extreme-ip-lookup.com/json/');
+        if (!data.loc || !data.loc.country) return;
+        let text = `<h1>
+          Location data for ${color.yellow(data.loc.isp)} user from ${color.yellow(data.loc.city)} 
+          ${color.yellow(data.loc.region)} ${color.yellow(data.loc.country)} ${color.yellow(data.loc.continent)}
+          <br>`;
+        if (data.loc.country === 'United States') {
+          text += `${color.blue('United States')} &nbsp &nbsp | 
             Tested: ${num(data.usa.totalTestResults)} +${num(data.usaHistory[0].totalTestResultsIncrease)} | 
             Positive: ${num(data.usa.positive)} +${num(data.usaHistory[0].positiveIncrease)} | 
             Hospitalized: ${num(data.usa.hospitalized)} +${num(data.usaHistory[0].hospitalizedIncrease)} | 
@@ -319,14 +335,14 @@
             Deaths: ${num(data.usa.death)} +${num(data.usaHistory[0].deathIncrease)} | 
             Updated: ${moment(data.usa.lastModified).format('ddd HH:mm')}
             <br>`;
-          const info = data.statesInfo.find((a) => loc.region === a.name);
+          const info = data.statesInfo.find((a) => data.loc.region === a.name);
           let state;
           if (info) state = data.states.find((a) => info.state === a.state);
           if (state) {
             const history = data.statesHistory.filter((a) => state.state === a.state);
             const yesterday = history[0].positive === state.positive ? history[1] : history[0];
             text += `
-              <a href="${info.covid19Site}">${color.blue(info.name)}</a> | 
+              <a href="${info.covid19Site}">${color.blue(info.name)}</a> &nbsp &nbsp | 
               Tested: ${num(state.totalTestResults)} +${num(state.totalTestResults - yesterday.totalTestResults)} | 
               Positive: ${num(state.positive)} +${num(state.positive - yesterday.positive)} | 
               Hospitalized: ${num(state.hospitalized)} +${num(Math.abs(state.hospitalized ? state.hospitalized - yesterday.hospitalized : 0))} | 
@@ -335,11 +351,11 @@
               <br>`;
           }
         } else {
-          if (loc.country === 'United Kingdom') loc.country = 'UK';
-          const country = data.countries.find((a) => a.name === loc.country);
+          if (data.loc.country === 'United Kingdom') data.loc.country = 'UK';
+          const country = data.countries.find((a) => a.name === data.loc.country);
           if (country) {
             text += `
-              <a href="https://www.worldometers.info/coronavirus/${country.link}">${color.blue(country.name)}</a> | 
+              <a href="https://www.worldometers.info/coronavirus/${country.link}">${color.blue(country.name)}</a> &nbsp &nbsp | 
               Tested: ${num(country.totalTested)} | 
               Positive: ${num(country.totalCases)} +${num(country.newCases)} yesterday +${num(country.liveCases)} today | 
               Active: ${num(country.activeCases)} | 
@@ -485,11 +501,15 @@
           ctx.arc(posx, posy, size, 0, 2 * Math.PI, false);
           ctx.fill();
         }
+        const near = data.jhulatest.filter((a) => (Math.round(a.Lat) === Math.round(data.loc.lat) && Math.round(a.Long_) === Math.round(data.loc.lon)));
+        // console.log('Location', data.loc);
+        // console.log('Nearest match', near);
       }
 
       async function printNews() {
         const div = document.getElementById('div-news');
         let text = '<h1>In The News</h1>';
+        if (data.news.length > 30) data.news.length = 30;
         for (const item of data.news) {
           text += `${item.publishDate} &nbsp <b>${color.blue(item.publication)}</b>: &nbsp <a href="${item.url}">${item.title}</a><br>`;
         }
@@ -540,8 +560,9 @@
         printNotes();
         getJHUSeries().then(() => renderCountriesTrend());
         getJHULatest().then(() => renderMap());
-        // printNews();
+        printNews();
         $('#filter').on('keyup', filter);
+        $('#raw-json').click(getJSON);
         setTimeout(main, 30 * 60 * 1000);
       }
 
