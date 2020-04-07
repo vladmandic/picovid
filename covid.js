@@ -1,6 +1,6 @@
 /* global moment, sorttable, marked, Popper */
 
-const maxItems = 75;
+const maxItems = 100;
 
 /** Main shared data structure */
 const data = { status: {}, fetch: [], loc: {}, world: {}, countries: [], usa: {}, usaHistory: [], states: [], statesInfo: [], statesHistory: [], florida: [], news: [], jhulatest: [], jhuhistory: [], ihme: {} };
