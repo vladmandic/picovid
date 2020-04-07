@@ -362,7 +362,7 @@ async function popupProjection(where) {
       <span class="spark-deaths-${where.replace(/ /g, '').replace(/\./g, '')}"></span><br>
       Projected total deaths: <b>${Math.max(...totalDeaths).toLocaleString()}</b><br>
       Updated: <b>${moment(data.ihme.ver[0].input_data_final_date).format('MMMM DD, YYYY')}</b><br>
-      Chart data: from ${moment().subtract(1, 'month').format('MMM DD')} to ${moment().add(2, 'month').format('MMM DD')}
+      Chart data: from ${moment().subtract(15, 'days').format('MMM DD')} to ${moment().add(45, 'days').format('MMM DD')}
     </div>
   `;
   $(`.spark-hospitalized-${where.replace(/ /g, '').replace(/\./g, '')}`).sparkline(hospitalized, { type: 'bar', barColor: 'grey' });
