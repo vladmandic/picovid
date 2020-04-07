@@ -246,7 +246,7 @@ async function getWMOData() {
 
 /** Print HTML title section */
 async function printTitle() {
-  if (!data.status.world || !data.status.usa || !data.status.statesInfo || !data.status.countries || !data.status.loc) {
+  if (!data.status.world || !data.status.usa || !data.status.statesInfo || !data.statesHistory || !data.status.countries || !data.status.loc) {
     setTimeout(printTitle, 100);
     return;
   }
@@ -279,7 +279,7 @@ async function printTitle() {
     const info = data.statesInfo.find((a) => data.loc.region === a.name);
     let state;
     if (info) state = data.states.find((a) => info.state === a.state);
-    if (state) {
+    if (state && state.positive) {
       const history = data.statesHistory.filter((a) => state.state === a.state);
       const yesterday = history[0].positive === state.positive ? history[1] : history[0];
       text += `
