@@ -16,7 +16,7 @@ async function get(item, header = {}) {
   const t1 = window.performance.now();
   const obj = { time: new Date(), uri: item, status: res.status, msg: res.statusText, ms: Math.round((1000 * t1 - 1000 * t0) / 1000) };
   // eslint-disable-next-line no-console
-  console.log(obj);
+  console.log('HTTP Fetch', obj);
   data.fetch.push(obj);
   return http;
 }
