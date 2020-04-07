@@ -310,17 +310,26 @@ async function printTitle() {
   document.getElementById('div-location').innerHTML = text;
 }
 
-// Create popup element with future projections
+/** Create popup element with future projections */
 async function popupProjection(where) {
   const div = document.getElementById(`projections-${where.replace(/ /g, '').replace(/\./g, '')}`);
+  const tip = document.createElement('div');
+  tip.id = 'tip';
+  tip.role = 'tooltip';
+  tip.style = 'padding: 4px; background: #ffff69; color: black; font-size: 1rem; box-shadow: 5px 5px #222222; border-radius: 10px; border-color: grey; border-style: solid;';
+  tip.innerHTML = `<div style="text-align: left"><b>Loading data for: ${where}</b></div>`;
+  div.appendChild(tip);
+  let popper = Popper.createPopper(div, tip);
   if (!data.ihme.loc) data.ihme.loc = await proxy('https://covid19.healthdata.org/api/metadata/location');
   if (!data.ihme.ver) data.ihme.ver = await proxy('https://covid19.healthdata.org/api/metadata/version');
   let loc;
+  // sanitize country lookups
   switch (where) {
     case 'USA': loc = data.ihme.loc.find((a) => a.local_id === 'USA'); break;
     case 'UK': loc = data.ihme.loc.find((a) => a.local_id === 'GBR'); break;
     default: loc = data.ihme.loc.find((a) => a.location_name === where);
   }
+  // if no country found lookup states
   if (!loc) {
     const usa = data.ihme.loc.find((a) => a.local_id === 'USA');
     loc = usa.children.find((a) => a.local_id === `US-${where}`);
@@ -344,9 +353,6 @@ async function popupProjection(where) {
     .filter((a) => a.covid_measure_name === 'peak_resource_usage')
     .map((b) => b.dt_mean);
   usage = usage[0] || '';
-  const tip = document.createElement('div');
-  tip.id = 'tip';
-  tip.role = 'tooltip';
   tip.innerHTML = `
     <div style="text-align: left">
       <b>${loc.location_name || where}</b><br>
@@ -359,9 +365,6 @@ async function popupProjection(where) {
       Chart data: from ${moment().subtract(1, 'month').format('MMM DD')} to ${moment().add(2, 'month').format('MMM DD')}
     </div>
   `;
-  tip.style = 'padding: 4px; background: #ffff69; color: black; font-size: 1rem; box-shadow: 5px 5px #222222; border-radius: 10px; border-color: grey; border-style: solid;';
-  div.appendChild(tip);
-  let popper = Popper.createPopper(div, tip);
   $(`.spark-hospitalized-${where.replace(/ /g, '').replace(/\./g, '')}`).sparkline(hospitalized, { type: 'bar', barColor: 'grey' });
   $(`.spark-deaths-${where.replace(/ /g, '').replace(/\./g, '')}`).sparkline(deaths, { type: 'bar', barColor: 'darkred' });
   setTimeout(() => {
