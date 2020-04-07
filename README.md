@@ -22,6 +22,7 @@ Or run directly from Git pages.
 - Counties red/green markers for new data indicate growth rate below threshold or recovery higher than growth
 - Countries trend charts show last two months of new cases
 - Countries link to Worldometers per-country web page
+- Projections data is from IHME showing mean values
 - States hospitalized cases is not reported regularly by all states
 - States pending cases is reported by only few states
 - States trend charts show last one months of new cases
