@@ -417,7 +417,7 @@ async function printStatesTable() {
       <td>${num(state.death)}</td>
       <td>${num(Math.abs(state.death - yesterday.death))}</td>
       <td>${moment(new Date(state.lastUpdateEt)).add(19, 'years') > moment(new Date()).subtract(2, 'days') ? color.greyed(state.lastUpdateEt) : color.red(state.lastUpdateEt)}</td>
-      <td><span id="projections-${state.state}" style="background: grey; font-size: 0.5rem"> PROJECTIONS </span></td>
+      <td><span id="projections-${state.state}" style="background: grey; font-size: 0.75rem">&nbspPROJECTIONS&nbsp</span></td>
       </tr>`;
   }
   table.innerHTML = text;
@@ -457,7 +457,7 @@ async function printCountriesTable() {
       <td>${color.ok(num(country.densityTested), country.densityTested > data.world.densityTested)}</td>
       <td>${color.ok(num(country.densityCases), country.densityCases < data.world.densityCases)}</td>
       <td>${color.ok(country.densityDeaths.toFixed(2), country.densityDeaths < data.world.densityDeaths)}</td>
-      <td><span id="projections-${country.name.replace(/ /g, '').replace(/\./g, '')}" style="background: grey; font-size: 0.5rem"> PROJECTIONS </span></td>
+      <td><span id="projections-${country.name.replace(/ /g, '').replace(/\./g, '')}" style="background: grey; font-size: 0.75rem">&nbspPROJECTIONS&nbsp</span></td>
       </tr>`;
   }
   table.innerHTML = text;
