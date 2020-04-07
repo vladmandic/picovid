@@ -1,7 +1,9 @@
-/* global moment, sorttable, marked */
+/* global moment, sorttable, marked, Popper */
+
 const maxItems = 75;
+
 /** Main shared data structure */
-const data = { status: {}, fetch: [], loc: {}, world: {}, countries: [], usa: {}, usaHistory: [], states: [], statesInfo: [], statesHistory: [], florida: [], news: [], jhulatest: [], jhuhistory: [] };
+const data = { status: {}, fetch: [], loc: {}, world: {}, countries: [], usa: {}, usaHistory: [], states: [], statesInfo: [], statesHistory: [], florida: [], news: [], jhulatest: [], jhuhistory: [], ihme: {} };
 
 /** Wrapper for HTTP GET */
 async function get(item, header = {}) {
@@ -286,7 +288,7 @@ async function printTitle() {
         Positive: ${num(state.positive)} +${num(state.positive - yesterday.positive)} | 
         Hospitalized: ${num(state.hospitalized)} +${num(Math.abs(state.hospitalized ? state.hospitalized - yesterday.hospitalized : 0))} | 
         Deaths: ${num(state.death)} +${num(Math.abs(state.death - yesterday.death))} | 
-        Updated: ${moment(state.lastUpdateEt).add(19, 'years').format('ddd HH:mm')}
+        Updated: ${moment(new Date(state.lastUpdateEt)).add(19, 'years').format('ddd HH:mm')}
         <br>`;
     }
   } else {
@@ -306,6 +308,67 @@ async function printTitle() {
   }
   text += '</h1';
   document.getElementById('div-location').innerHTML = text;
+}
+
+// Create popup element with future projections
+async function popupProjection(where) {
+  const div = document.getElementById(`projections-${where.replace(/ /g, '').replace(/\./g, '')}`);
+  if (!data.ihme.loc) data.ihme.loc = await proxy('https://covid19.healthdata.org/api/metadata/location');
+  if (!data.ihme.ver) data.ihme.ver = await proxy('https://covid19.healthdata.org/api/metadata/version');
+  let loc;
+  switch (where) {
+    case 'USA': loc = data.ihme.loc.find((a) => a.local_id === 'USA'); break;
+    case 'UK': loc = data.ihme.loc.find((a) => a.local_id === 'GBR'); break;
+    default: loc = data.ihme.loc.find((a) => a.location_name === where);
+  }
+  if (!loc) {
+    const usa = data.ihme.loc.find((a) => a.local_id === 'USA');
+    loc = usa.children.find((a) => a.local_id === `US-${where}`);
+  }
+  if (!loc) loc = {};
+  let peak = await proxy(`https://covid19.healthdata.org/api/data/peak_death?location=${loc.location_id}`);
+  peak = peak[0] && peak[0].deaths_date ? peak[0].deaths_date : '';
+  const all = await proxy(`https://covid19.healthdata.org/api/data/hospitalization?location=${loc.location_id}`);
+  const deaths = all
+    .filter((a) => a.covid_measure_name === 'deaths')
+    .filter((a) => (moment(a.date_reported) > moment().subtract(15, 'days') && (moment(a.date_reported) < moment().add(45, 'days'))))
+    .map((b) => b.mean);
+  const totalDeaths = all
+    .filter((a) => a.covid_measure_name === 'total_death')
+    .map((b) => b.mean);
+  const hospitalized = all
+    .filter((a) => a.covid_measure_name === 'covid_all_bed')
+    .filter((a) => (moment(a.date_reported) > moment().subtract(15, 'days') && (moment(a.date_reported) < moment().add(45, 'days'))))
+    .map((b) => b.mean);
+  let usage = all
+    .filter((a) => a.covid_measure_name === 'peak_resource_usage')
+    .map((b) => b.dt_mean);
+  usage = usage[0] || '';
+  const tip = document.createElement('div');
+  tip.id = 'tip';
+  tip.role = 'tooltip';
+  tip.innerHTML = `
+    <div style="text-align: left">
+      <b>${loc.location_name || where}</b><br>
+      &nbsp Peak hospitalized: <b>${Math.max(...hospitalized).toLocaleString()}</b> on <b>${moment(usage).format('MMMM DD')}</b><br>
+      <span class="spark-hospitalized-${where.replace(/ /g, '').replace(/\./g, '')}"></span><br>
+      &nbsp Peak deaths: <b>${Math.max(...deaths).toLocaleString()}/day</b> on <b>${moment(peak).format('MMMM DD')}</b><br>
+      <span class="spark-deaths-${where.replace(/ /g, '').replace(/\./g, '')}"></span><br>
+      Projected total deaths: <b>${Math.max(...totalDeaths).toLocaleString()}</b><br>
+      Updated: <b>${moment(data.ihme.ver[0].input_data_final_date).format('MMMM DD, YYYY')}</b><br>
+      Chart data: from ${moment().subtract(1, 'month').format('MMM DD')} to ${moment().add(2, 'month').format('MMM DD')}
+    </div>
+  `;
+  tip.style = 'padding: 4px; background: #ffff69; color: black; font-size: 1rem; box-shadow: 5px 5px #222222; border-radius: 10px; border-color: grey; border-style: solid;';
+  div.appendChild(tip);
+  let popper = Popper.createPopper(div, tip);
+  $(`.spark-hospitalized-${where.replace(/ /g, '').replace(/\./g, '')}`).sparkline(hospitalized, { type: 'bar', barColor: 'grey' });
+  $(`.spark-deaths-${where.replace(/ /g, '').replace(/\./g, '')}`).sparkline(deaths, { type: 'bar', barColor: 'darkred' });
+  setTimeout(() => {
+    popper.destroy();
+    popper = null;
+    div.removeChild(tip);
+  }, 10000);
 }
 
 /** Print HTML line for Miami-Dade county */
@@ -335,7 +398,7 @@ async function printStatesTable() {
   const table = document.getElementById('table-states');
   let text = `
       <tr><th>State</th><th>Tested</th><th>(new)</th><th>Positive</th><th>(new)</th><th>History: new cases over 1 Month</th>
-      <th>Pending</th><th>Hospitalized</th><th>(new)</th><th>Deaths</th><th>(new)</th><th>Updated</th></tr>
+      <th>Pending</th><th>Hospitalized</th><th>(new)</th><th>Deaths</th><th>(new)</th><th>Updated</th><th></th></tr>
     `;
   for (const state of data.states) {
     const info = data.statesInfo.find((a) => state.state === a.state);
@@ -353,10 +416,14 @@ async function printStatesTable() {
       <td>${num(Math.abs(state.hospitalized ? state.hospitalized - yesterday.hospitalized : 0))}</td>
       <td>${num(state.death)}</td>
       <td>${num(Math.abs(state.death - yesterday.death))}</td>
-      <td>${moment(state.lastUpdateEt).add(19, 'years') > moment().subtract(2, 'days') ? color.greyed(state.lastUpdateEt) : color.red(state.lastUpdateEt)}</td>
+      <td>${moment(new Date(state.lastUpdateEt)).add(19, 'years') > moment(new Date()).subtract(2, 'days') ? color.greyed(state.lastUpdateEt) : color.red(state.lastUpdateEt)}</td>
+      <td><span id="projections-${state.state}" style="background: grey; font-size: 0.5rem"> PROJECTIONS </span></td>
       </tr>`;
   }
   table.innerHTML = text;
+  for (const state of data.states) {
+    $(`#projections-${state.state}`).click(() => popupProjection(state.state));
+  }
   if (data.states.length) sorttable.makeSortable(table);
 }
 
@@ -369,7 +436,7 @@ async function printCountriesTable() {
   const table = document.getElementById('table-countries');
   let text = `<tr>
     <th>Country</th><th>Cases</th><th>(new/day)</th><th>(new/current)</th><th>History: new cases over 2 months</th><th>Tested</th>
-    <th>Deaths</th><th>(new/24h)</th><th>(new/current)</th><th>Recovered</th><th>Active</th><th>Critical</th><th>Tested/1M</th><th>Cases/1M</th><th>Deaths/1M</th>
+    <th>Deaths</th><th>(new/24h)</th><th>(new/current)</th><th>Recovered</th><th>Active</th><th>Critical</th><th>Tested/1M</th><th>Cases/1M</th><th>Deaths/1M</th><th></th>
     </tr>`;
   const countries = data.countries.length ? data.countries : [];
   if (countries.length > maxItems) countries.length = maxItems;
@@ -390,9 +457,13 @@ async function printCountriesTable() {
       <td>${color.ok(num(country.densityTested), country.densityTested > data.world.densityTested)}</td>
       <td>${color.ok(num(country.densityCases), country.densityCases < data.world.densityCases)}</td>
       <td>${color.ok(country.densityDeaths.toFixed(2), country.densityDeaths < data.world.densityDeaths)}</td>
+      <td><span id="projections-${country.name.replace(/ /g, '').replace(/\./g, '')}" style="background: grey; font-size: 0.5rem"> PROJECTIONS </span></td>
       </tr>`;
   }
   table.innerHTML = text;
+  for (const country of countries) {
+    $(`#projections-${country.name.replace(/ /g, '').replace(/\./g, '')}`).click(() => popupProjection(country.name));
+  }
   if (data.countries.length) sorttable.makeSortable(table);
 }
 
@@ -546,7 +617,7 @@ async function filter() {
 
 /** Print HTML notes fetched from GitHub in markdown format */
 async function printNotes() {
-  const md = await get('https://vladmandic.github.io/picovid/README.md');
+  const md = await get('README.md');
   document.getElementById('div-notes').innerHTML = marked(md);
 }
 

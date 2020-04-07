@@ -12,6 +12,7 @@ Or run directly from Git pages.
 - Worldometer: <https://www.worldometers.info/coronavirus/>
 - Johns Hopkins CSSE: <https://www.arcgis.com/apps/opsdashboard/index.html#/bda7594740fd40299423467b48e9ecf6>
 - Florida Department of Health: <https://floridahealthcovid19.gov/>
+- IHME Projections: <https://covid19.healthdata.org/>
 
 ## Notes on data:
 
