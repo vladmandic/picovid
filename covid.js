@@ -419,7 +419,7 @@ async function printStatesTable() {
       <td>${num(state.death)}</td>
       <td>${num(Math.abs(state.death - yesterday.death))}</td>
       <td>${moment(new Date(state.lastUpdateEt)).add(19, 'years') > moment(new Date()).subtract(2, 'days') ? color.greyed(state.lastUpdateEt) : color.red(state.lastUpdateEt)}</td>
-      <td><span id="projections-${state.state}" style="background: grey; font-size: 0.75rem">&nbspPROJECTIONS&nbsp</span></td>
+      <td><span id="projections-${state.state}" class="projection">PROJECTIONS</span></td>
       </tr>`;
   }
   table.innerHTML = text;
@@ -460,7 +460,7 @@ async function printCountriesTable() {
       <td>${color.ok(num(country.densityTested), country.densityTested > data.world.densityTested)}</td>
       <td>${color.ok(num(country.densityCases), country.densityCases < data.world.densityCases)}</td>
       <td>${color.ok(country.densityDeaths.toFixed(2), country.densityDeaths < data.world.densityDeaths)}</td>
-      <td><span id="projections-${country.name.replace(/ /g, '').replace(/\./g, '')}" style="background: grey; font-size: 0.75rem">&nbspPROJECTIONS&nbsp</span></td>
+      <td><span id="projections-${country.name.replace(/ /g, '').replace(/\./g, '')}" class="projection">PROJECTIONS</span></td>
       </tr>`;
   }
   table.innerHTML = text;
@@ -483,8 +483,14 @@ async function renderUSATrend() {
     const val = data.usaHistory[day - 1] ? data.usaHistory[day].positive - data.usaHistory[day - 1].positive : data.usaHistory[day].positive;
     trend.push(val);
   }
+  const max = Math.max(...trend);
+  const min = Math.min(...trend);
+  const low = `:${Math.trunc(0.33 * (max - min) + min)}`;
+  const med = `${Math.trunc(0.33 * (max - min) + min)}:${Math.trunc(0.67 * (max - min) + min)}`;
+  const high = `${Math.trunc(0.67 * (max - min) + min)}:`;
+  const ranges = $.range_map({ [low]: '#e0ffe0', [med]: '#ffffe0', [high]: '#ffe0e0' });
   $(`.chart-country-total-${country.name}`)
-    .sparkline(trend, { type: 'bar', barColor: 'lightyellow', zeroColor: '', tooltipFormat: `<span>${country.name}: {{value}}</span>` });
+    .sparkline(trend, { type: 'bar', barColor: 'lightyellow', zeroColor: '', colorMap: ranges, tooltipFormat: `<span>${country.name}: {{value}}</span>` });
   data.usaHistory.reverse();
 }
 
@@ -500,8 +506,14 @@ async function renderCountriesTrend() {
       let trend = history && history.Data ? history.Data : [];
       trend = trend.map((item) => (item > 1 ? item : null));
       if (trend.length > 60) trend.splice(0, trend.length - 60);
+      const max = Math.max(...trend);
+      const min = Math.min(...trend);
+      const low = `:${Math.trunc(0.33 * (max - min) + min)}`;
+      const med = `${Math.trunc(0.33 * (max - min) + min)}:${Math.trunc(0.67 * (max - min) + min)}`;
+      const high = `${Math.trunc(0.67 * (max - min) + min)}:`;
+      const ranges = $.range_map({ [low]: '#e0ffe0', [med]: '#ffffe0', [high]: '#ffe0e0' });
       $(`.chart-country-total-${country.name.replace(/ /g, '').replace(/\./g, '')}`)
-        .sparkline(trend, { type: 'bar', barColor: 'lightyellow', zeroColor: '', tooltipFormat: `<span>${country.name}: {{value}}</span>` });
+        .sparkline(trend, { type: 'bar', barColor: 'lightyellow', zeroColor: '', colorMap: ranges, tooltipFormat: `<span>${country.name}: {{value}}</span>` });
     }
   }
 }
@@ -519,8 +531,14 @@ async function renderStatesTrend() {
       trend.push(day.positiveIncrease);
     }
     if (trend.length > 30) trend.splice(0, trend.length - 30);
+    const max = Math.max(...trend);
+    const min = Math.min(...trend);
+    const low = `:${Math.trunc(0.33 * (max - min) + min)}`;
+    const med = `${Math.trunc(0.33 * (max - min) + min)}:${Math.trunc(0.67 * (max - min) + min)}`;
+    const high = `${Math.trunc(0.67 * (max - min) + min)}:`;
+    const ranges = $.range_map({ [low]: '#e0ffe0', [med]: '#ffffe0', [high]: '#ffe0e0' });
     $(`.chart-state-new-${state.state}`)
-      .sparkline(trend, { type: 'bar', barColor: 'lightyellow', zeroColor: '', tooltipFormat: `<span>${state.state}: {{value}}</span>` });
+      .sparkline(trend, { type: 'bar', barColor: 'lightyellow', zeroColor: '', colorMap: ranges, tooltipFormat: `<span>${state.state}: {{value}}</span>` });
   }
 }
 
