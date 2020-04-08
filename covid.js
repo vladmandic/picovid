@@ -314,12 +314,12 @@ async function printTitle() {
 async function popupProjection(where) {
   const div = document.getElementById(`projections-${where.replace(/ /g, '').replace(/\./g, '')}`);
   const tip = document.createElement('div');
-  tip.id = 'tip';
+  tip.id = 'tooltip';
   tip.role = 'tooltip';
-  tip.style = 'padding: 4px; background: #ffff69; color: black; font-size: 1rem; box-shadow: 5px 5px #222222; border-radius: 10px; border-color: grey; border-style: solid;';
+  tip.className = 'popper';
   tip.innerHTML = `<div style="text-align: left"><b>Loading data for: ${where}</b></div>`;
   div.appendChild(tip);
-  let popper = Popper.createPopper(div, tip);
+  let popper = Popper.createPopper(div, tip, { placement: 'left', modifiers: [{ name: 'offset', options: { offset: [0, 20] } }] });
   if (!data.ihme.loc) data.ihme.loc = await proxy('https://covid19.healthdata.org/api/metadata/location');
   if (!data.ihme.ver) data.ihme.ver = await proxy('https://covid19.healthdata.org/api/metadata/version');
   let loc;
@@ -363,8 +363,7 @@ async function popupProjection(where) {
       Projected total deaths: <b>${Math.max(...totalDeaths).toLocaleString()}</b><br>
       Updated: <b>${moment(data.ihme.ver[0].input_data_final_date).format('MMMM DD, YYYY')}</b><br>
       Chart data: from ${moment().subtract(15, 'days').format('MMM DD')} to ${moment().add(45, 'days').format('MMM DD')}
-    </div>
-  `;
+    </div>`;
   $(`.spark-hospitalized-${where.replace(/ /g, '').replace(/\./g, '')}`).sparkline(hospitalized, { type: 'bar', barColor: 'grey' });
   $(`.spark-deaths-${where.replace(/ /g, '').replace(/\./g, '')}`).sparkline(deaths, { type: 'bar', barColor: 'darkred' });
   setTimeout(() => {
@@ -652,7 +651,7 @@ async function main() {
   initMap();
   renderMap();
   printNews();
-  // register handlers
+  // register mouse and keyboard handlers
   $('#filter').on('keyup', filter);
   $('#raw-json').click(getJSON);
   // reload every 30min
