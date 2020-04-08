@@ -2,11 +2,11 @@
   "name": "Pi Covid-19 Tracker",
   "short_name": "Pi Covid-19 Tracker",
   "icons": [
-    { "src": "/picovid/assets/dash-1024.png", "sizes": "1024x1024", "type": "image/png" },
-    { "src": "/picovid/assets/dash-512.png", "sizes": "1024x1024", "type": "image/png" },
-    { "src": "/picovid/assets/dash-256.png", "sizes": "1024x1024", "type": "image/png" },
-    { "src": "/picovid/assets/dash-128.png", "sizes": "1024x1024", "type": "image/png" },
-    { "src": "/picovid/assets/dash-64.png", "sizes": "1024x1024", "type": "image/png" }
+    { "src": "assets/dash-1024.png", "sizes": "1024x1024", "type": "image/png" },
+    { "src": "assets/dash-512.png", "sizes": "1024x1024", "type": "image/png" },
+    { "src": "assets/dash-256.png", "sizes": "1024x1024", "type": "image/png" },
+    { "src": "assets/dash-128.png", "sizes": "1024x1024", "type": "image/png" },
+    { "src": "assets/dash-64.png", "sizes": "1024x1024", "type": "image/png" }
     ],
   "start_url": "covid.html",
   "display": "standalone",

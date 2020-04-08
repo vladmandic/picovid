@@ -24,16 +24,18 @@
       ::-webkit-scrollbar-track { border-radius: 0; }
       ::-webkit-scrollbar-thumb { border-radius: 0; background: grey }
       ::-webkit-scrollbar-button { background: transparent; }
-      html { font-family: Roboto; font-size: 14px }
-      body { background: black; color: #ebebeb; margin-left: 8px; margin-right: 8px; overflow-x: auto; }
+      html { font-family: Roboto; font-size: 14px; margin: 0 }
+      body { background: black; color: #ebebeb; margin-left: 12px; margin-right: 12px; overflow-x: auto; }
+      .nav { background-color: grey; margin: 0px 0px 30px 0px; padding: 4px; left: 0; height: 25px; width: 100%; position: sticky; top: 0; z-index: 101; }
       .row { width: 100% }
-      .col { background: #555555; text-align: left; margin: 8px; padding: 8px; width: 100%; box-shadow: 5px 5px #222222; overflow-y: auto; }
+      .col { background: #555555; text-align: left; margin: 8px; padding: 4px; width: 100%; box-shadow: 5px 5px #222222; overflow-y: auto; }
       .jqstooltip { background: #567d66 !important; border: 0px !important; padding: 8px; width: 100px !important; height: 30px !important }
       .popper {padding: 20px; background: #ffff69; color: black; font-size: 1rem; box-shadow: 5px 5px #222222; border-radius: 10px; border-color: grey; border-style: solid; }
       h1 { font-size: 1.3rem; margin-left: 8px; font-weight: bold; line-height: 30px }
       h2 { font-size: 1.0rem; margin: 0px; padding: 0px; font-weight: bold; }
       a { color: white }
-      table { margin: 10px }
+      table { margin: 0px; z-index: 100 }
+      table th:not(.sorttable_sorted):not(.sorttable_sorted_reverse):not(.sorttable_nosort):after { content: " \25B4\25BE" }
       th { padding-left: 8px; color: lightblue; font-weight: bold; background: grey; line-height: 2rem; position: sticky; top: 0 }
       td { padding-left: 8px; font-size: 1rem; text-align: right; line-height: 2rem; }
       tr:nth-child(even) { background: #505050 }
@@ -54,7 +56,8 @@
       <h2>Error: JavaScript is disabled</h2>
     </noscript>
     <br>
-      <nav style="background-color: grey; margin: 0px 0px 30px 0px; padding: 4px; position: absolute; top: 0; left: 0; width: 100%; text-align: right;"><b>
+    <div style="width: 100%" class="nav">
+      <nav style="position: absolute; top: 0px; right: 0px"><b>
         <a href="#div-status">Status</a> &nbsp | &nbsp 
         <a href="#table-countries">World Data</a> &nbsp | &nbsp 
         <a href="#table-states">USA Data</a> &nbsp | &nbsp 
@@ -62,6 +65,7 @@
         <span id="raw-json" style="color: white">Raw Data</span> &nbsp | &nbsp 
         <a href="#div-notes">Notes</a> &nbsp 
       </b></nav>
+    </div>
     <div class="row" style="margin-top: 20px">
       <span id="div-title"></span>
       <span id="div-location"></span>

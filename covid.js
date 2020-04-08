@@ -399,8 +399,8 @@ async function printStatesTable() {
   }
   const table = document.getElementById('table-states');
   let text = `
-      <tr><th>State</th><th>Tested</th><th>(new)</th><th>Positive</th><th>(new)</th><th>History: new cases over 1 Month</th>
-      <th>Pending</th><th>Hospitalized</th><th>(new)</th><th>Deaths</th><th>(new)</th><th>Updated</th><th></th></tr>
+      <tr><th>State</th><th>Tested</th><th>(new)</th><th>Positive</th><th>(new)</th><th class="sorttable_nosort">History: new cases over 1 Month</th>
+      <th>Pending</th><th>Hospitalized</th><th>(new)</th><th>Deaths</th><th>(new)</th><th>Updated</th><th class="sorttable_nosort"></th></tr>
     `;
   for (const state of data.states) {
     const info = data.statesInfo.find((a) => state.state === a.state);
@@ -426,7 +426,7 @@ async function printStatesTable() {
   for (const state of data.states) {
     $(`#projections-${state.state}`).click(() => popupProjection(state.state));
   }
-  if (data.states.length) sorttable.makeSortable(table);
+  sorttable.makeSortable(table);
 }
 
 /** Print HTML table for world countries */
@@ -437,8 +437,9 @@ async function printCountriesTable() {
   }
   const table = document.getElementById('table-countries');
   let text = `<tr>
-    <th>Country</th><th>Cases</th><th>(new/day)</th><th>(new/current)</th><th>History: new cases over 2 months</th><th>Tested</th>
-    <th>Deaths</th><th>(new/24h)</th><th>(new/current)</th><th>Recovered</th><th>Active</th><th>Critical</th><th>Tested/1M</th><th>Cases/1M</th><th>Deaths/1M</th><th></th>
+    <th>Country</th><th>Cases</th><th>(new/day)</th><th>(new/current)</th><th class="sorttable_nosort">History: new cases over 2 months</th><th>Tested</th>
+    <th>Deaths</th><th>(new/24h)</th><th>(new/current)</th><th>Recovered</th><th>Active</th><th>Critical</th><th>Tested/1M</th>
+    <th>Cases/1M</th><th>Deaths/1M</th><th class="sorttable_nosort"></th>
     </tr>`;
   const countries = data.countries.length ? data.countries : [];
   if (countries.length > maxItems) countries.length = maxItems;
