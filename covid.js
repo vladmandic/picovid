@@ -459,7 +459,7 @@ async function printCountriesTable() {
       <td>${color.ok(num(country.criticalCases), country.criticalCases < country.totalRecovered)}</td>
       <td>${color.ok(num(country.densityTested), country.densityTested > data.world.densityTested)}</td>
       <td>${color.ok(num(country.densityCases), country.densityCases < data.world.densityCases)}</td>
-      <td>${color.ok(country.densityDeaths.toFixed(2), country.densityDeaths < data.world.densityDeaths)}</td>
+      <td>${color.ok(num(country.densityDeaths), country.densityDeaths < data.world.densityDeaths)}</td>
       <td><span id="projections-${country.name.replace(/ /g, '').replace(/\./g, '')}" class="projection">PROJECTIONS</span></td>
       </tr>`;
   }
