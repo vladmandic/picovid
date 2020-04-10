@@ -399,6 +399,7 @@ async function printStatesTable() {
     return;
   }
   const table = document.getElementById('table-states');
+  if (!table) return;
   let text = `
       <tr><th>State</th><th>Tested</th><th>(new)</th><th>Positive</th><th>(new)</th><th class="sorttable_nosort">History: new cases over 1 Month</th>
       <th>Pending</th><th>Hospitalized</th><th>(new)</th><th>Deaths</th><th>(new)</th><th>Updated</th><th class="sorttable_nosort"></th></tr>
@@ -437,6 +438,7 @@ async function printRegionsTable() {
     return;
   }
   const table = document.getElementById('table-regions');
+  if (!table) return;
   let text = `<tr>
     <th>Region</th><th>Cases</th><th>New</th><th>Deaths</th><th>New</th><th>Recovered</th><th>Active</th><th>Critical</th>
     </tr>`;
@@ -467,6 +469,7 @@ async function printCountriesTable() {
     return;
   }
   const table = document.getElementById('table-countries');
+  if (!table) return;
   let text = `<tr>
     <th>Country</th><th>Cases</th><th>(new/day)</th><th>(new/current)</th><th class="sorttable_nosort">History: new cases over 2 months</th><th>Tested</th>
     <th>Deaths</th><th>(new/24h)</th><th>(new/current)</th><th>Recovered</th><th>Active</th><th>Critical</th><th>Tested/1M</th>
@@ -695,7 +698,7 @@ async function main() {
   printTitle();
   printMiami();
   printNotes();
-  // printRegionsTable();
+  printRegionsTable();
   printCountriesTable();
   printStatesTable();
   renderUSATrend();
