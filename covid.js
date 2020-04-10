@@ -1,6 +1,7 @@
 /* global moment, sorttable, marked, Popper */
 
 const maxItems = 150;
+const regions = ['World', 'Europe', 'North America', 'Asia', 'South America', 'Africa', 'Oceania'];
 
 /** Main shared data structure */
 const data = { status: {}, fetch: [], loc: {}, world: {}, countries: [], usa: {}, usaHistory: [], states: [], statesInfo: [], statesHistory: [], florida: [], news: [], jhulatest: [], jhuhistory: [], ihme: {} };
@@ -429,6 +430,36 @@ async function printStatesTable() {
   sorttable.makeSortable(table);
 }
 
+/** Print HTML table for world regions */
+async function printRegionsTable() {
+  if (!data.status.countries) {
+    setTimeout(printRegionsTable, 100);
+    return;
+  }
+  const table = document.getElementById('table-regions');
+  let text = `<tr>
+    <th>Region</th><th>Cases</th><th>New</th><th>Deaths</th><th>New</th><th>Recovered</th><th>Active</th><th>Critical</th>
+    </tr>`;
+  const countries = data.countries.length ? data.countries : [];
+  if (countries.length > maxItems) countries.length = maxItems;
+  for (const country of countries) {
+    if (regions.includes(country.name.trim())) {
+      text += `<tr>
+        <td style="text-align: left"><b><a href="https://www.worldometers.info/coronavirus/${country.link}">${country.name}</a></b></td>
+        <td>${color.ok(num(country.newCases), 100 * country.newCases / country.totalCases < 8)}</td>
+        <td>${num(country.totalTested)}</td>
+        <td>${num(country.totalDeaths)}</td>
+        <td>${color.ok(num(country.newDeaths), 100 * country.newDeaths / country.totalDeaths < 8)}</td>
+        <td>${color.ok(num(country.totalRecovered), 100 * country.totalRecovered / country.totalCases > 35)}</td>
+        <td>${color.ok(num(country.activeCases), 100 * country.activeCases / country.totalCases < 50)}</td>
+        <td>${color.ok(num(country.criticalCases), country.criticalCases < country.totalRecovered)}</td>
+        </tr>`;
+    }
+  }
+  table.innerHTML = text;
+  if (data.countries.length) sorttable.makeSortable(table);
+}
+
 /** Print HTML table for world countries */
 async function printCountriesTable() {
   if (!data.status.countries) {
@@ -444,7 +475,8 @@ async function printCountriesTable() {
   const countries = data.countries.length ? data.countries : [];
   if (countries.length > maxItems) countries.length = maxItems;
   for (const country of countries) {
-    text += `<tr>
+    if (!regions.includes(country.name.trim())) {
+      text += `<tr>
       <td style="text-align: left"><b><a href="https://www.worldometers.info/coronavirus/${country.link}">${country.name}</a></b></td>
       <td>${num(country.totalCases)}</td>
       <td>${color.ok(num(country.newCases), 100 * country.newCases / country.totalCases < 8)}</td>
@@ -462,6 +494,7 @@ async function printCountriesTable() {
       <td>${color.ok(num(country.densityDeaths), country.densityDeaths < data.world.densityDeaths)}</td>
       <td><span id="projections-${country.name.replace(/ /g, '').replace(/\./g, '')}" class="projection">PROJECTIONS</span></td>
       </tr>`;
+    }
   }
   table.innerHTML = text;
   for (const country of countries) {
@@ -662,8 +695,9 @@ async function main() {
   printTitle();
   printMiami();
   printNotes();
-  printStatesTable();
+  // printRegionsTable();
   printCountriesTable();
+  printStatesTable();
   renderUSATrend();
   renderStatesTrend();
   renderCountriesTrend();
