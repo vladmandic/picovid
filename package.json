@@ -66,9 +66,9 @@
         ]
     },
     "dependencies": {
-        "jsdoc": "^3.6.3"
     },
     "devDependencies": {
+        "jsdoc": "^3.6.3",
         "eslint": "^7.0.0-alpha.2",
         "eslint-config-airbnb-base": "^14.1.0",
         "eslint-plugin-html": "^6.0.0",
