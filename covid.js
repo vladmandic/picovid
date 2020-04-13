@@ -320,7 +320,7 @@ async function popupProjection(where) {
   tip.className = 'popper';
   tip.innerHTML = `<div style="text-align: left"><b>Loading data for: ${where}</b></div>`;
   div.appendChild(tip);
-  let popper = Popper.createPopper(div, tip, { placement: 'left', modifiers: [{ name: 'offset', options: { offset: [0, 20] } }] });
+  let popper = Popper.createPopper(div, tip, { placement: 'left', strategy: 'absolute', modifiers: [{ name: 'offset', options: { offset: [0, 20] } }] });
   if (!data.ihme.loc) data.ihme.loc = await proxy('https://covid19.healthdata.org/api/metadata/location');
   if (!data.ihme.ver) data.ihme.ver = await proxy('https://covid19.healthdata.org/api/metadata/version');
   let loc;
@@ -421,7 +421,7 @@ async function printStatesTable() {
       <td>${num(state.death)}</td>
       <td>${num(Math.abs(state.death - yesterday.death))}</td>
       <td>${moment(new Date(state.lastUpdateEt)).add(19, 'years') > moment(new Date()).subtract(2, 'days') ? color.greyed(state.lastUpdateEt) : color.red(state.lastUpdateEt)}</td>
-      <td><span id="projections-${state.state}" class="projection">PROJECTIONS</span></td>
+      <td><span id="projections-${state.state}" class="projection">&nbspPROJECTIONS&nbsp</span></td>
       </tr>`;
   }
   table.innerHTML = text;
@@ -495,7 +495,7 @@ async function printCountriesTable() {
       <td>${color.ok(num(country.densityTested), country.densityTested > data.world.densityTested)}</td>
       <td>${color.ok(num(country.densityCases), country.densityCases < data.world.densityCases)}</td>
       <td>${color.ok(num(country.densityDeaths), country.densityDeaths < data.world.densityDeaths)}</td>
-      <td><span id="projections-${country.name.replace(/ /g, '').replace(/\./g, '')}" class="projection">PROJECTIONS</span></td>
+      <td><span id="projections-${country.name.replace(/ /g, '').replace(/\./g, '')}" class="projection">&nbspPROJECTIONS&nbsp</span></td>
       </tr>`;
     }
   }
