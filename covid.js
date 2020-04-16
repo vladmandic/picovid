@@ -1,3 +1,4 @@
+/* eslint-disable prefer-template */
 /* global moment, sorttable, marked, Popper */
 
 const maxItems = 150;
@@ -402,7 +403,7 @@ async function printStatesTable() {
   if (!table) return;
   let text = `
       <tr><th>State</th><th>Tested</th><th>(new)</th><th>Positive</th><th>(new)</th><th class="sorttable_nosort">History: new cases over 1 Month</th>
-      <th>Pending</th><th>Hospitalized</th><th>(new)</th><th>Deaths</th><th>(new)</th><th>Updated</th><th class="sorttable_nosort"></th></tr>
+      <th>Pending</th><th>Hospitalized</th><th>(new)</th><th>Deaths</th><th>(new)</th><th>Mortality%</th><th>Updated</th><th class="sorttable_nosort"></th></tr>
     `;
   for (const state of data.states) {
     const info = data.statesInfo.find((a) => state.state === a.state);
@@ -420,6 +421,8 @@ async function printStatesTable() {
       <td>${num(Math.abs(state.hospitalized ? state.hospitalized - yesterday.hospitalized : 0))}</td>
       <td>${num(state.death)}</td>
       <td>${num(Math.abs(state.death - yesterday.death))}</td>
+      <td>${state.death ? (100 * state.death / state.positive).toFixed(2) + '%' : 'N/A'}</td>
+
       <td>${moment(new Date(state.lastUpdateEt)).add(19, 'years') > moment(new Date()).subtract(2, 'days') ? color.greyed(state.lastUpdateEt) : color.red(state.lastUpdateEt)}</td>
       <td><span id="projections-${state.state}" class="projection">&nbspPROJECTIONS&nbsp</span></td>
       </tr>`;
@@ -473,7 +476,7 @@ async function printCountriesTable() {
   let text = `<tr>
     <th>Country</th><th>Cases</th><th>(new/day)</th><th>(new/current)</th><th class="sorttable_nosort">History: new cases over 2 months</th><th>Tested</th>
     <th>Deaths</th><th>(new/24h)</th><th>(new/current)</th><th>Recovered</th><th>Active</th><th>Critical</th><th>Tested/1M</th>
-    <th>Cases/1M</th><th>Deaths/1M</th><th class="sorttable_nosort"></th>
+    <th>Cases/1M</th><th>Deaths/1M</th><th>Mortality%</th><th class="sorttable_nosort"></th>
     </tr>`;
   const countries = data.countries.length ? data.countries : [];
   if (countries.length > maxItems) countries.length = maxItems;
@@ -495,6 +498,7 @@ async function printCountriesTable() {
       <td>${color.ok(num(country.densityTested), country.densityTested > data.world.densityTested)}</td>
       <td>${color.ok(num(country.densityCases), country.densityCases < data.world.densityCases)}</td>
       <td>${color.ok(num(country.densityDeaths), country.densityDeaths < data.world.densityDeaths)}</td>
+      <td>${color.ok((country.totalDeaths ? (100 * country.totalDeaths / country.totalCases).toFixed(2) + '%' : 'N/A'), country.densityDeaths < data.world.densityDeaths)}</td>
       <td><span id="projections-${country.name.replace(/ /g, '').replace(/\./g, '')}" class="projection">&nbspPROJECTIONS&nbsp</span></td>
       </tr>`;
     }
