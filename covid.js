@@ -25,7 +25,7 @@ async function get(item, header = {}) {
 
 /** Wrapper for HTTP GET with proxy through private server to bypass CORS rules */
 async function proxy(item) {
-  const http = await get(`https://pidash.ddns.net/api/proxy?url=${encodeURIComponent(item)}`, { headers: { authorization: 'Basic cGlkYXNoOmdUU2R5U2RlJWN0NDIjU2FB' } });
+  const http = await get(`https://pidash.ddns.net/proxy?url=${encodeURIComponent(item)}`);
   return http;
 }
 
