@@ -9,14 +9,19 @@ const data = { status: {}, fetch: [], loc: {}, world: {}, countries: [], usa: {}
 
 /** Wrapper for HTTP GET */
 async function get(item, header = {}) {
+  if (!item.startsWith('http')) return null;
   let http = null;
   let res = null;
   const t0 = window.performance.now();
-  res = await fetch(item, header);
+  try {
+    res = await fetch(item, header);
+  } catch { /**/ }
   http = res && res.ok ? await res.text() : '';
-  try { http = JSON.parse(http); } catch { /**/ }
+  try {
+    http = JSON.parse(http);
+  } catch { /**/ }
   const t1 = window.performance.now();
-  const obj = { time: new Date(), uri: item, status: res.status, msg: res.statusText, ms: Math.round((1000 * t1 - 1000 * t0) / 1000) };
+  const obj = { time: new Date(), uri: item, status: res ? res.status : 500, msg: res ? res.statusText : 'exception', ms: Math.round((1000 * t1 - 1000 * t0) / 1000) };
   // eslint-disable-next-line no-console
   console.log('HTTP Fetch', obj);
   data.fetch.push(obj);
@@ -25,7 +30,8 @@ async function get(item, header = {}) {
 
 /** Wrapper for HTTP GET with proxy through private server to bypass CORS rules */
 async function proxy(item) {
-  const http = await get(`https://pidash.ddns.net/proxy?url=${encodeURIComponent(item)}`);
+  const http = await get(`https://cors-anywhere.herokuapp.com/${item}`);
+  // http = await get(`https://pidash.ddns.net/proxy?url=${encodeURIComponent(item)}`);
   return http;
 }
 
@@ -180,8 +186,9 @@ async function getFLData() {
 
 /** Get WMO data: Data is in HTML and parsed to JSON */
 async function getWMOData() {
-  const html = await proxy('https://www.worldometers.info/coronavirus/');
+  let html = await proxy('https://www.worldometers.info/coronavirus/');
   if (!html) return;
+  html = html.replace(/<img\/?[^>]+(>|$)/g, '');
   let table;
   table = $(html).find('#main_table_countries_today > tbody:nth-child(2) > tr');
   data.countries = [];
@@ -244,6 +251,7 @@ async function getWMOData() {
     totalRecovered: world.totalRecovered,
     criticalCases: world.criticalCases,
   };
+  html = '';
 }
 
 /** Print HTML title section */
@@ -283,6 +291,10 @@ async function printTitle() {
     if (info) state = data.states.find((a) => info.state === a.state);
     if (state && state.positive) {
       const history = data.statesHistory.filter((a) => state.state === a.state);
+      if (!history || !history[0] || !history[0].positive) {
+        setTimeout(printTitle, 100);
+        return;
+      }
       const yesterday = history[0].positive === state.positive ? history[1] : history[0];
       text += `
         <a href="${info.covid19Site}">${color.blue(info.name)}</a> &nbsp &nbsp | 
@@ -351,16 +363,13 @@ async function popupProjection(where) {
     .filter((a) => a.covid_measure_name === 'covid_all_bed')
     .filter((a) => (moment(a.date_reported) > moment().subtract(15, 'days') && (moment(a.date_reported) < moment().add(45, 'days'))))
     .map((b) => b.mean);
-  let usage = all
-    .filter((a) => a.covid_measure_name === 'peak_resource_usage')
-    .map((b) => b.dt_mean);
-  usage = usage[0] || '';
   tip.innerHTML = `
     <div style="text-align: left">
       <b>${loc.location_name || where}</b><br>
-      &nbsp Peak hospitalized: <b>${Math.max(...hospitalized).toLocaleString()}</b> on <b>${moment(usage).format('MMMM DD')}</b><br>
+      <b>Peak: ${moment(peak).format('MMMM DD')}</b><br>
+      &nbsp Peak hospitalized: <b>${Math.max(...hospitalized).toLocaleString()}</b><br>
       <span class="spark-hospitalized-${where.replace(/ /g, '').replace(/\./g, '')}"></span><br>
-      &nbsp Peak deaths: <b>${Math.max(...deaths).toLocaleString()}/day</b> on <b>${moment(peak).format('MMMM DD')}</b><br>
+      &nbsp Peak deaths: <b>${Math.max(...deaths).toLocaleString()}/day</b><br>
       <span class="spark-deaths-${where.replace(/ /g, '').replace(/\./g, '')}"></span><br>
       Projected total deaths: <b>${Math.max(...totalDeaths).toLocaleString()}</b><br>
       Updated: <b>${moment(data.ihme.ver[0].input_data_final_date).format('MMMM DD, YYYY')}</b><br>
@@ -385,10 +394,10 @@ async function printMiami() {
   if (!miami) return;
   document.getElementById('div-miami').innerHTML = `
     <b>${color.blue('Miami-Dade Data')}</b> | 
-    Tested: ${num(miami.PUILab_Yes)} | 
+    Tested: ${num(miami.T_total)} | 
     Positive: ${num(miami.TPositive)} | 
     Pending: ${num(miami.TPending)} | 
-    Hospitalized: ${num(miami.C_Hosp_Yes)} | 
+    Hospitalized: ${num(miami.C_HospYes_Res + miami.C_HospYes_NonRes)} | 
     Deaths: ${num(miami.Deaths)}
     `;
 }
@@ -443,7 +452,7 @@ async function printRegionsTable() {
   const table = document.getElementById('table-regions');
   if (!table) return;
   let text = `<tr>
-    <th>Region</th><th>Cases</th><th>New</th><th>Deaths</th><th>New</th><th>Recovered</th><th>Active</th><th>Critical</th>
+    <th>Region</th><th>Active</th><th>Recovered</th><th>Critical</th><th>Deaths</th>
     </tr>`;
   const countries = data.countries.length ? data.countries : [];
   if (countries.length > maxItems) countries.length = maxItems;
@@ -451,13 +460,10 @@ async function printRegionsTable() {
     if (regions.includes(country.name.trim())) {
       text += `<tr>
         <td style="text-align: left"><b><a href="https://www.worldometers.info/coronavirus/${country.link}">${country.name}</a></b></td>
-        <td>${color.ok(num(country.newCases), 100 * country.newCases / country.totalCases < 8)}</td>
-        <td>${num(country.totalTested)}</td>
+        <td>${num(country.activeCases)}</td>
+        <td>${num(country.totalRecovered)}</td>
+        <td>${num(country.criticalCases)}</td>
         <td>${num(country.totalDeaths)}</td>
-        <td>${color.ok(num(country.newDeaths), 100 * country.newDeaths / country.totalDeaths < 8)}</td>
-        <td>${color.ok(num(country.totalRecovered), 100 * country.totalRecovered / country.totalCases > 35)}</td>
-        <td>${color.ok(num(country.activeCases), 100 * country.activeCases / country.totalCases < 50)}</td>
-        <td>${color.ok(num(country.criticalCases), country.criticalCases < country.totalRecovered)}</td>
         </tr>`;
     }
   }
@@ -679,7 +685,7 @@ async function filter() {
 /** Print HTML notes fetched from GitHub in markdown format */
 async function printNotes() {
   const md = await get('README.md');
-  document.getElementById('div-notes').innerHTML = marked(md);
+  if (md) document.getElementById('div-notes').innerHTML = marked(md);
 }
 
 async function getGeoIP() {
