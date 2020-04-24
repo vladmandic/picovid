@@ -6,7 +6,7 @@ Why Pi\**anything*? Because I use my Raspberry Pi 4 as a development server, so 
 **Deployment**: Just download covid.html to any local folder and open html file. There is no deployment.  
 Or run directly from Git pages.  
 
-## Credit for data goes to:
+## Credit for data goes to
 
 - The COVID Tracking Project: <https://covidtracking.com/>
 - Worldometer: <https://www.worldometers.info/coronavirus/>
@@ -14,7 +14,7 @@ Or run directly from Git pages.
 - Florida Department of Health: <https://floridahealthcovid19.gov/>
 - IHME Projections: <https://covid19.healthdata.org/>
 
-## Notes on data:
+## Notes on data
 
 - Tables are sortable, just click on a header
 - Countries daily new cases and deaths is reported for last full 24h period and for current day so far
@@ -26,5 +26,5 @@ Or run directly from Git pages.
 - States hospitalized cases is not reported regularly by all states
 - States pending cases is reported by only few states
 - States trend charts show last one months of new cases
-- States link to official state web page        
+- States link to official state web page
 - Map infection scale is a square root function
