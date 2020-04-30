@@ -165,11 +165,11 @@ async function getJHULatest() {
 async function getUSAData() {
   const temp = await get('https://covidtracking.com/api/v1/us/current.json');
   data.usa = temp[0];
-  data.usaHistory = await get('https://covidtracking.com/api/us/daily');
-  data.states = await get('https://covidtracking.com/api/states');
-  data.statesInfo = await get('https://covidtracking.com/api/states/info');
-  data.statesHistory = await get('https://covidtracking.com/api/states/daily');
-  data.news = await get('https://covidtracking.com/api/press');
+  data.usaHistory = await get('https://covidtracking.com/api/v1/us/daily.json');
+  data.states = await get('https://covidtracking.com/api/v1/states/current.json');
+  data.statesInfo = await get('https://covidtracking.com/api/v1/states/info.json');
+  data.statesHistory = await get('https://covidtracking.com/api/v1/states/daily.json');
+  data.news = await get('https://covidtracking.com/api/v1/press.json');
 }
 
 /** Get Florida data: Data is in JSON */
