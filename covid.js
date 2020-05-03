@@ -684,7 +684,7 @@ async function filter() {
 
 /** Print HTML notes fetched from GitHub in markdown format */
 async function printNotes() {
-  const md = await get('README.md');
+  const md = await get('https://vladmandic.github.io/picovid/README.md');
   if (md) document.getElementById('div-notes').innerHTML = marked(md);
 }
 
