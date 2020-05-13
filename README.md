@@ -28,3 +28,7 @@ Or run directly from Git pages.
 - States trend charts show last one months of new cases
 - States link to official state web page
 - Map infection scale is a square root function
+
+## Screenshots
+
+![alt text](assets/screenshot-picovid.png)
