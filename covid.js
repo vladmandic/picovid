@@ -195,19 +195,19 @@ async function getWMOData() {
   for (const item of table) {
     const fields = $(item).find('td');
     const country = {
-      name: fields[0].innerText,
-      link: $(fields[0].innerHTML).attr('href') || '',
-      totalCases: int(fields[1].innerText),
-      liveCases: int(fields[2].innerText),
-      totalDeaths: int(fields[3].innerText),
-      liveDeaths: int(fields[4].innerText),
-      totalRecovered: int(fields[5].innerText),
-      activeCases: int(fields[6].innerText),
-      criticalCases: int(fields[7].innerText),
-      densityCases: int(fields[8].innerText),
-      densityDeaths: parseFloat(fields[9].innerText),
-      totalTested: int(fields[10].innerText),
-      densityTested: int(fields[11].innerText),
+      name: fields[1].innerText,
+      link: $(fields[1].innerHTML).attr('href') || '',
+      totalCases: int(fields[2].innerText),
+      liveCases: int(fields[3].innerText),
+      totalDeaths: int(fields[4].innerText),
+      liveDeaths: int(fields[5].innerText),
+      totalRecovered: int(fields[6].innerText),
+      activeCases: int(fields[7].innerText),
+      criticalCases: int(fields[8].innerText),
+      densityCases: int(fields[9].innerText),
+      densityDeaths: parseFloat(fields[10].innerText),
+      totalTested: int(fields[11].innerText),
+      densityTested: int(fields[12].innerText),
     };
     data.countries.push(country);
   }
@@ -411,7 +411,7 @@ async function printStatesTable() {
   const table = document.getElementById('table-states');
   if (!table) return;
   let text = `
-      <tr><th>State</th><th>Tested</th><th>(new)</th><th>Positive</th><th>(new)</th><th class="sorttable_nosort">History: new cases over 1 Month</th>
+      <tr><th>State</th><th>Tested</th><th>(new)</th><th>Positive</th><th>(new)</th><th class="sorttable_nosort">History: new cases over 3 Months</th>
       <th>Pending</th><th>Hospitalized</th><th>(new)</th><th>Deaths</th><th>(new)</th><th>Mortality%</th><th>Updated</th><th class="sorttable_nosort"></th></tr>
     `;
   for (const state of data.states) {
@@ -480,7 +480,7 @@ async function printCountriesTable() {
   const table = document.getElementById('table-countries');
   if (!table) return;
   let text = `<tr>
-    <th>Country</th><th>Cases</th><th>(new/day)</th><th>(new/current)</th><th class="sorttable_nosort">History: new cases over 2 months</th><th>Tested</th>
+    <th>Country</th><th>Cases</th><th>(new/day)</th><th>(new/current)</th><th class="sorttable_nosort">History: new cases over 3 months</th><th>Tested</th>
     <th>Deaths</th><th>(new/24h)</th><th>(new/current)</th><th>Recovered</th><th>Active</th><th>Critical</th><th>Tested/1M</th>
     <th>Cases/1M</th><th>Deaths/1M</th><th>Mortality%</th><th class="sorttable_nosort"></th>
     </tr>`;
@@ -535,6 +535,7 @@ async function renderUSATrend() {
   const med = `${Math.trunc(0.33 * (max - min) + min)}:${Math.trunc(0.67 * (max - min) + min)}`;
   const high = `${Math.trunc(0.67 * (max - min) + min)}:`;
   const ranges = $.range_map({ [low]: '#e0ffe0', [med]: '#ffffe0', [high]: '#ffe0e0' });
+  if (trend.length > 90) trend.splice(0, trend.length - 90);
   $(`.chart-country-total-${country.name}`)
     .sparkline(trend, { type: 'bar', barColor: 'lightyellow', zeroColor: '', colorMap: ranges, tooltipFormat: `<span>${country.name}: {{value}}</span>` });
   data.usaHistory.reverse();
@@ -551,7 +552,7 @@ async function renderCountriesTrend() {
       const history = data.jhuhistory.find((a) => country.name === a.Country && a.State === '');
       let trend = history && history.Data ? history.Data : [];
       trend = trend.map((item) => (item > 1 ? item : null));
-      if (trend.length > 60) trend.splice(0, trend.length - 60);
+      if (trend.length > 90) trend.splice(0, trend.length - 90);
       const max = Math.max(...trend);
       const min = Math.min(...trend);
       const low = `:${Math.trunc(0.33 * (max - min) + min)}`;
@@ -576,7 +577,7 @@ async function renderStatesTrend() {
     for (const day of history.reverse()) {
       trend.push(day.positiveIncrease);
     }
-    if (trend.length > 30) trend.splice(0, trend.length - 30);
+    if (trend.length > 90) trend.splice(0, trend.length - 90);
     const max = Math.max(...trend);
     const min = Math.min(...trend);
     const low = `:${Math.trunc(0.33 * (max - min) + min)}`;
