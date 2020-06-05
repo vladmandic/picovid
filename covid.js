@@ -169,7 +169,7 @@ async function getUSAData() {
   data.states = await get('https://covidtracking.com/api/v1/states/current.json');
   data.statesInfo = await get('https://covidtracking.com/api/v1/states/info.json');
   data.statesHistory = await get('https://covidtracking.com/api/v1/states/daily.json');
-  data.news = await get('https://covidtracking.com/api/v1/press.json');
+  // data.news = await get('https://covidtracking.com/api/v1/press.json');
 }
 
 /** Get Florida data: Data is in JSON */
@@ -202,12 +202,12 @@ async function getWMOData() {
       totalDeaths: int(fields[4].innerText),
       liveDeaths: int(fields[5].innerText),
       totalRecovered: int(fields[6].innerText),
-      activeCases: int(fields[7].innerText),
-      criticalCases: int(fields[8].innerText),
-      densityCases: int(fields[9].innerText),
-      densityDeaths: parseFloat(fields[10].innerText),
-      totalTested: int(fields[11].innerText),
-      densityTested: int(fields[12].innerText),
+      activeCases: int(fields[8].innerText),
+      criticalCases: int(fields[7].innerText),
+      densityCases: int(fields[10].innerText),
+      densityDeaths: parseFloat(fields[11].innerText),
+      totalTested: int(fields[12].innerText),
+      densityTested: int(fields[13].innerText),
     };
     data.countries.push(country);
   }
@@ -261,15 +261,15 @@ async function printTitle() {
     return;
   }
   // print world info
-  document.getElementById('div-title').innerHTML = `
-    <h1>${color.blue('Covid-19 World Data')} &nbsp &nbsp | 
-    Tested: ${num(data.world.totalTested)} | 
-    Positive: ${num(data.world.totalCases)} +${num(data.world.newCases)} | 
-    Active: ${num(data.world.activeCases)} | 
-    Critical: ${num(data.world.criticalCases)} | 
+  document.getElementById('div-title').innerHTML = '<h1>Covid-19 World Data</h1>';
+  /*
+    &nbsp &nbsp | 
+    Positive: ${num(data.world.totalCases)} | 
+    Active: ${num(data.world.criticalCases)} | 
     Recovered: ${num(data.world.totalRecovered)} | 
-    Deaths: ${num(data.world.totalDeaths)} +${num(data.world.newDeaths)} | 
+    Deaths: ${num(data.world.totalDeaths)} | 
     </h1>`;
+  */
   // get geoip
   let text = `<h1>
     Location data for ${color.yellow(data.loc.isp || 'unknown')} user from ${color.yellow(data.loc.city || '')} 
@@ -390,13 +390,14 @@ async function printMiami() {
     setTimeout(printMiami, 100);
     return;
   }
-  const miami = data.florida.find((a) => a.COUNTYNAME === 'MIAMI-DADE');
+  const miami = data.florida.find((a) => a.COUNTYNAME === 'DADE');
+  console.log(data.florida);
+  console.log(miami);
   if (!miami) return;
   document.getElementById('div-miami').innerHTML = `
     <b>${color.blue('Miami-Dade Data')}</b> | 
     Tested: ${num(miami.T_total)} | 
     Positive: ${num(miami.TPositive)} | 
-    Pending: ${num(miami.TPending)} | 
     Hospitalized: ${num(miami.C_HospYes_Res + miami.C_HospYes_NonRes)} | 
     Deaths: ${num(miami.Deaths)}
     `;
@@ -412,7 +413,7 @@ async function printStatesTable() {
   if (!table) return;
   let text = `
       <tr><th>State</th><th>Tested</th><th>(new)</th><th>Positive</th><th>(new)</th><th class="sorttable_nosort">History: new cases over 3 Months</th>
-      <th>Pending</th><th>Hospitalized</th><th>(new)</th><th>Deaths</th><th>(new)</th><th>Mortality%</th><th>Updated</th><th class="sorttable_nosort"></th></tr>
+      <th>Hospitalized</th><th>(new)</th><th>Deaths</th><th>(new)</th><th>Mortality%</th><th>Updated</th><th class="sorttable_nosort"></th></tr>
     `;
   for (const state of data.states) {
     const info = data.statesInfo.find((a) => state.state === a.state);
@@ -425,7 +426,6 @@ async function printStatesTable() {
       <td>${num(state.positive)}</td>
       <td>${color.ok(num(state.positive - yesterday.positive), 100 * (state.positive - yesterday.positive) / state.positive < 10)}</td>
       <td><span class="chart-state-new-${state.state}"></span></td>
-      <td>${color.ok(num(state.pending || yesterday.pending), 100 * (state.pending || yesterday.pending) / state.totalTestResults < 10)}</td>
       <td>${num(state.hospitalized)}</td>
       <td>${num(Math.abs(state.hospitalized ? state.hospitalized - yesterday.hospitalized : 0))}</td>
       <td>${num(state.death)}</td>
@@ -433,13 +433,15 @@ async function printStatesTable() {
       <td>${state.death ? (100 * state.death / state.positive).toFixed(2) + '%' : 'N/A'}</td>
 
       <td>${moment(new Date(state.lastUpdateEt)).add(19, 'years') > moment(new Date()).subtract(2, 'days') ? color.greyed(state.lastUpdateEt) : color.red(state.lastUpdateEt)}</td>
-      <td><span id="projections-${state.state}" class="projection">&nbspPROJECTIONS&nbsp</span></td>
       </tr>`;
   }
   table.innerHTML = text;
+  /*
+  <td><span id="projections-${state.state}" class="projection">&nbspPROJECTIONS&nbsp</span></td>
   for (const state of data.states) {
     $(`#projections-${state.state}`).click(() => popupProjection(state.state));
   }
+  */
   sorttable.makeSortable(table);
 }
 
@@ -452,7 +454,7 @@ async function printRegionsTable() {
   const table = document.getElementById('table-regions');
   if (!table) return;
   let text = `<tr>
-    <th>Region</th><th>Active</th><th>Recovered</th><th>Critical</th><th>Deaths</th>
+    <th>Region</th><th>Cases</th><th>Active</th><th>Recovered</th><th>Deaths</th>
     </tr>`;
   const countries = data.countries.length ? data.countries : [];
   if (countries.length > maxItems) countries.length = maxItems;
@@ -460,9 +462,9 @@ async function printRegionsTable() {
     if (regions.includes(country.name.trim())) {
       text += `<tr>
         <td style="text-align: left"><b><a href="https://www.worldometers.info/coronavirus/${country.link}">${country.name}</a></b></td>
+        <td>${num(country.totalCases)}</td>
         <td>${num(country.activeCases)}</td>
         <td>${num(country.totalRecovered)}</td>
-        <td>${num(country.criticalCases)}</td>
         <td>${num(country.totalDeaths)}</td>
         </tr>`;
     }
@@ -480,8 +482,8 @@ async function printCountriesTable() {
   const table = document.getElementById('table-countries');
   if (!table) return;
   let text = `<tr>
-    <th>Country</th><th>Cases</th><th>(new/day)</th><th>(new/current)</th><th class="sorttable_nosort">History: new cases over 3 months</th><th>Tested</th>
-    <th>Deaths</th><th>(new/24h)</th><th>(new/current)</th><th>Recovered</th><th>Active</th><th>Critical</th><th>Tested/1M</th>
+    <th>Country</th><th>Cases</th><th>New/day</th><th class="sorttable_nosort">History: new cases over 3 months</th><th>Tested</th>
+    <th>Deaths</th><th>New/day</th><th>Recovered</th><th>Active</th><th>Tested/1M</th>
     <th>Cases/1M</th><th>Deaths/1M</th><th>Mortality%</th><th class="sorttable_nosort"></th>
     </tr>`;
   const countries = data.countries.length ? data.countries : [];
@@ -491,28 +493,27 @@ async function printCountriesTable() {
       text += `<tr>
       <td style="text-align: left"><b><a href="https://www.worldometers.info/coronavirus/${country.link}">${country.name}</a></b></td>
       <td>${num(country.totalCases)}</td>
-      <td>${color.ok(num(country.newCases), 100 * country.newCases / country.totalCases < 8)}</td>
       <td>${color.ok(num(country.liveCases), country.liveCases < country.newCases)}</td>
       <td><span class="chart-country-total-${country.name.replace(/ /g, '').replace(/\./g, '')}"></span></td>
       <td>${num(country.totalTested)}</td>
       <td>${num(country.totalDeaths)}</td>
-      <td>${color.ok(num(country.newDeaths), 100 * country.newDeaths / country.totalDeaths < 8)}</td>
       <td>${color.ok(num(country.liveDeaths), country.liveDeaths < country.newDeaths)}</td>
       <td>${color.ok(num(country.totalRecovered), 100 * country.totalRecovered / country.totalCases > 35)}</td>
       <td>${color.ok(num(country.activeCases), 100 * country.activeCases / country.totalCases < 50)}</td>
-      <td>${color.ok(num(country.criticalCases), country.criticalCases < country.totalRecovered)}</td>
       <td>${color.ok(num(country.densityTested), country.densityTested > data.world.densityTested)}</td>
       <td>${color.ok(num(country.densityCases), country.densityCases < data.world.densityCases)}</td>
       <td>${color.ok(num(country.densityDeaths), country.densityDeaths < data.world.densityDeaths)}</td>
       <td>${color.ok((country.totalDeaths ? (100 * country.totalDeaths / country.totalCases).toFixed(2) + '%' : 'N/A'), country.densityDeaths < data.world.densityDeaths)}</td>
-      <td><span id="projections-${country.name.replace(/ /g, '').replace(/\./g, '')}" class="projection">&nbspPROJECTIONS&nbsp</span></td>
       </tr>`;
     }
   }
   table.innerHTML = text;
+  /*
+  <td><span id="projections-${country.name.replace(/ /g, '').replace(/\./g, '')}" class="projection">&nbspPROJECTIONS&nbsp</span></td>
   for (const country of countries) {
     $(`#projections-${country.name.replace(/ /g, '').replace(/\./g, '')}`).click(() => popupProjection(country.name));
   }
+  */
   if (data.countries.length) sorttable.makeSortable(table);
 }
 
@@ -664,9 +665,9 @@ async function status() {
     ${color.ok('USA States', data.status.statesHistory)} | 
     ${color.ok('JHU Latest', data.status.jhuLatest)} | 
     ${color.ok('JHU Series', data.status.jhuHistory)} | 
-    ${color.ok('Florida', data.status.florida)} | 
-    ${color.ok('News', data.status.news)}
+    ${color.ok('Florida', data.status.florida)}
     `;
+    // ${color.ok('News', data.status.news)}
   setTimeout(status, 100);
 }
 
@@ -685,8 +686,8 @@ async function filter() {
 
 /** Print HTML notes fetched from GitHub in markdown format */
 async function printNotes() {
-  const md = await get('https://vladmandic.github.io/picovid/README.md');
-  if (md) document.getElementById('div-notes').innerHTML = marked(md);
+  // const md = await get('https://vladmandic.github.io/picovid/README.md');
+  // if (md) document.getElementById('div-notes').innerHTML = marked(md);
 }
 
 async function getGeoIP() {
@@ -717,7 +718,7 @@ async function main() {
   renderCountriesTrend();
   initMap();
   renderMap();
-  printNews();
+  // printNews();
   // register mouse and keyboard handlers
   $('#filter').on('keyup', filter);
   $('#raw-json').click(getJSON);
